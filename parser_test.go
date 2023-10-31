@@ -14,7 +14,7 @@ func TestParseGriffonBlock(t *testing.T) {
 		vultr_api_key = "1234567890"
 	}`)
 
-	config, err := ParseHCL("test.hcl", src)
+	config, err := ParseHCL("test.hcl", src, nil)
 	require.NoError(t, err)
 	require.Equalf(t, GriffonBlock{
 		Region:      "nyc1",
@@ -33,7 +33,7 @@ func TestParseSshKeyBlock(t *testing.T) {
 		ssh_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADA"
 	}`)
 
-	config, err := ParseHCL("test.hcl", src)
+	config, err := ParseHCL("test.hcl", src, nil)
 	require.NoError(t, err)
 	require.Equalf(t, GriffonBlock{
 		Region:      "nyc1",
@@ -66,9 +66,10 @@ func TestParseGriffonBlock_Variables(t *testing.T) {
 			expected: GriffonBlock{Region: "ams", VultrAPIKey: "1234567890"},
 		},
 	}
+	evalCtx := getEvalContext()
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			config, err := ParseHCL("test.hcl", tC.src)
+			config, err := ParseHCL("test.hcl", tC.src, evalCtx)
 			if diag, ok := err.(hcl.Diagnostics); ok && diag.HasErrors() {
 				for i, diagErr := range diag.Errs() {
 					t.Log("HCL diagnostic error [", i, "]:", diagErr.Error())
