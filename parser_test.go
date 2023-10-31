@@ -3,6 +3,7 @@ package main
 import (
 	"testing"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -47,4 +48,34 @@ func TestParseSshKeyBlock(t *testing.T) {
 		Name:   "my_key",
 		SSHKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADA",
 	}, config.SSHKeys[0], "SSHKeyBlock parsed incorrectly")
+}
+
+func TestParseGriffonBlock_Variables(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		src      []byte
+		expected GriffonBlock
+	}{
+		{
+			desc: "parse AMS as a variable",
+			src: []byte(`
+			griffon {
+				region = AMS
+				vultr_api_key = "1234567890"
+			}`),
+			expected: GriffonBlock{Region: "ams", VultrAPIKey: "1234567890"},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			config, err := ParseHCL("test.hcl", tC.src)
+			if diag, ok := err.(hcl.Diagnostics); ok && diag.HasErrors() {
+				for i, diagErr := range diag.Errs() {
+					t.Log("HCL diagnostic error [", i, "]:", diagErr.Error())
+				}
+			}
+			require.NoError(t, err)
+			require.Equalf(t, tC.expected, config.Griffon, "GriffonBlock parsed incorrectly")
+		})
+	}
 }
