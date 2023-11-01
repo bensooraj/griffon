@@ -65,6 +65,24 @@ func TestParseGriffonBlock_Variables(t *testing.T) {
 			}`),
 			expected: GriffonBlock{Region: "ams", VultrAPIKey: "1234567890"},
 		},
+		{
+			desc: "parse AMS as a template string",
+			src: []byte(`
+			griffon {
+				region = "${AMS}terdam"
+				vultr_api_key = "1234567890"
+			}`),
+			expected: GriffonBlock{Region: "amsterdam", VultrAPIKey: "1234567890"},
+		},
+		{
+			desc: "parse AMS as a template string",
+			src: []byte(`
+			griffon {
+				region = "${AMS == "ams" ? "toronto" : "amsterdam"}"
+				vultr_api_key = "1234567890"
+			}`),
+			expected: GriffonBlock{Region: "toronto", VultrAPIKey: "1234567890"},
+		},
 	}
 	evalCtx := getEvalContext()
 	for _, tC := range testCases {
