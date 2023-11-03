@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsimple"
 	"github.com/zclconf/go-cty/cty"
@@ -19,6 +21,11 @@ func getEvalContext() *hcl.EvalContext {
 
 	// Region variables
 	vars["AMS"] = cty.StringVal("ams")
+
+	// Environment variables
+	vars["env"] = cty.ObjectVal(map[string]cty.Value{
+		"VULTR_API_KEY": cty.StringVal(os.Getenv("VULTR_API_KEY")),
+	})
 
 	return &hcl.EvalContext{
 		Variables: vars,

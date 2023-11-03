@@ -51,6 +51,12 @@ func TestParseSshKeyBlock(t *testing.T) {
 }
 
 func TestParseGriffonBlock_Variables(t *testing.T) {
+
+	t.Setenv("VULTR_API_KEY", "1234567890")
+	defer t.Cleanup(func() {
+		t.Setenv("VULTR_API_KEY", "")
+	})
+
 	testCases := []struct {
 		desc     string
 		src      []byte
@@ -82,6 +88,15 @@ func TestParseGriffonBlock_Variables(t *testing.T) {
 				vultr_api_key = "1234567890"
 			}`),
 			expected: GriffonBlock{Region: "toronto", VultrAPIKey: "1234567890"},
+		},
+		{
+			desc: "parse AMS as a variable",
+			src: []byte(`
+			griffon {
+				region = AMS
+				vultr_api_key = env.VULTR_API_KEY
+			}`),
+			expected: GriffonBlock{Region: "ams", VultrAPIKey: "1234567890"},
 		},
 	}
 	evalCtx := getEvalContext()
