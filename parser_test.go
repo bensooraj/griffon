@@ -113,3 +113,49 @@ func TestParseGriffonBlock_Variables(t *testing.T) {
 		})
 	}
 }
+
+func Test5_Functions(t *testing.T) {
+
+	t.Setenv("VULTR_API_KEY", "AxDfCdASdFzzxserDFWSD")
+	defer t.Cleanup(func() {
+		t.Setenv("VULTR_API_KEY", "")
+	})
+
+	testCases := []struct {
+		desc     string
+		src      []byte
+		expected Config
+	}{
+		{
+			desc: "parse AMS as a variable",
+			src: []byte(`
+			griffon {
+				region = uppercase(AMS)
+				vultr_api_key = lowercase(env.VULTR_API_KEY)
+			}
+			ssh_key "my_key" {
+				ssh_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADA"
+			}`),
+			expected: Config{
+				Griffon: GriffonBlock{Region: "AMS", VultrAPIKey: "axdfcdasdfzzxserdfwsd"},
+				SSHKeys: []SSHKeyBlock{
+					{Name: "my_key", SSHKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADA"},
+				},
+			},
+		},
+	}
+	evalCtx := getEvalContext()
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			config, err := ParseHCL("test.hcl", tC.src, evalCtx)
+			if diag, ok := err.(hcl.Diagnostics); ok && diag.HasErrors() {
+				for i, diagErr := range diag.Errs() {
+					t.Log("HCL diagnostic error [", i, "]:", diagErr.Error())
+				}
+			}
+			require.NoError(t, err)
+			require.Equalf(t, tC.expected.Griffon, config.Griffon, "GriffonBlock parsed incorrectly")
+			require.Equalf(t, tC.expected.SSHKeys[0], config.SSHKeys[0], "GriffonBlock parsed incorrectly")
+		})
+	}
+}
