@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/hcl/v2"
@@ -117,8 +119,14 @@ func TestParseGriffonBlock_Variables(t *testing.T) {
 func Test5_Functions(t *testing.T) {
 
 	t.Setenv("VULTR_API_KEY", "AxDfCdASdFzzxserDFWSD")
+	myKeyPubFile, err := os.CreateTemp("", "my_key.pub")
+	require.NoError(t, err)
+	_, err = myKeyPubFile.WriteString("ssh-rsa AAAAB3NzaC1yc2EAAAADA")
+	require.NoError(t, err)
+
 	defer t.Cleanup(func() {
 		t.Setenv("VULTR_API_KEY", "")
+		os.Remove(myKeyPubFile.Name())
 	})
 
 	testCases := []struct {
@@ -127,7 +135,7 @@ func Test5_Functions(t *testing.T) {
 		expected Config
 	}{
 		{
-			desc: "parse AMS as a variable",
+			desc: "built-in functions uppercase and lowercase",
 			src: []byte(`
 			griffon {
 				region = uppercase(AMS)
@@ -136,6 +144,23 @@ func Test5_Functions(t *testing.T) {
 			ssh_key "my_key" {
 				ssh_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADA"
 			}`),
+			expected: Config{
+				Griffon: GriffonBlock{Region: "AMS", VultrAPIKey: "axdfcdasdfzzxserdfwsd"},
+				SSHKeys: []SSHKeyBlock{
+					{Name: "my_key", SSHKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADA"},
+				},
+			},
+		},
+		{
+			desc: "custom functions file",
+			src: []byte(fmt.Sprintf(`
+			griffon {
+				region = uppercase(AMS)
+				vultr_api_key = lowercase(env.VULTR_API_KEY)
+			}
+			ssh_key "my_key" {
+				ssh_key = file("%s")
+			}`, myKeyPubFile.Name())),
 			expected: Config{
 				Griffon: GriffonBlock{Region: "AMS", VultrAPIKey: "axdfcdasdfzzxserdfwsd"},
 				SSHKeys: []SSHKeyBlock{
