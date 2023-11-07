@@ -7,6 +7,33 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 )
 
+func (g *GriffonBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
+	content, diags := block.Body.Content(GriffonBlockSchema)
+	switch {
+	case diags.HasErrors():
+		return diags
+	case len(content.Attributes) == 0:
+		return errors.New("griffon block must have attributes")
+	}
+
+	for attrName, attr := range content.Attributes {
+		value, diags := attr.Expr.Value(ctx)
+		if diags.HasErrors() {
+			return diags
+		}
+
+		switch attrName {
+		case "region":
+			g.Region = value.AsString()
+		case "vultr_api_key":
+			g.VultrAPIKey = value.AsString()
+		default:
+			return errors.New("unknown attribute " + attrName)
+		}
+	}
+	return nil
+}
+
 func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) (*Config, error) {
 	config := Config{}
 
@@ -31,29 +58,11 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 			if len(hclBlocks) != 1 {
 				return nil, errors.New("only one griffon block allowed")
 			}
-			griffonContent, diags := hclBlocks[0].Body.Content(GriffonBlockSchema)
-			switch {
-			case diags.HasErrors():
-				return nil, diags
-			case len(griffonContent.Attributes) == 0:
-				return nil, errors.New("griffon block must have attributes")
+			var griffon GriffonBlock
+			if err := griffon.FromHCLBlock(hclBlocks[0], ctx); err != nil {
+				return nil, err
 			}
-
-			for attrName, attr := range griffonContent.Attributes {
-				value, diags := attr.Expr.Value(ctx)
-				if diags.HasErrors() {
-					return nil, diags
-				}
-
-				switch attrName {
-				case "region":
-					config.Griffon.Region = value.AsString()
-				case "vultr_api_key":
-					config.Griffon.VultrAPIKey = value.AsString()
-				default:
-					return nil, errors.New("unknown attribute " + attrName)
-				}
-			}
+			config.Griffon = griffon
 		case "ssh_key":
 			for _, hclBlock := range hclBlocks {
 				sshKeyContent, diags := hclBlock.Body.Content(SSHKeyBlockSchema)
