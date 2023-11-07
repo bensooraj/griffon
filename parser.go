@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsimple"
@@ -46,7 +47,7 @@ func getEvalContext() *hcl.EvalContext {
 		},
 		Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
 			filename := args[0].AsString()
-			fileBuffer, err := os.ReadFile(filename)
+			fileBuffer, err := os.ReadFile(filepath.Clean(filename))
 			if err != nil {
 				return cty.StringVal(""), err
 			}
