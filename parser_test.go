@@ -53,7 +53,6 @@ func TestParseSshKeyBlock(t *testing.T) {
 }
 
 func TestParseGriffonBlock_Variables(t *testing.T) {
-
 	t.Setenv("VULTR_API_KEY", "1234567890")
 	defer t.Cleanup(func() {
 		t.Setenv("VULTR_API_KEY", "")
@@ -116,8 +115,8 @@ func TestParseGriffonBlock_Variables(t *testing.T) {
 	}
 }
 
+//nolint:dupl
 func Test5_Functions(t *testing.T) {
-
 	t.Setenv("VULTR_API_KEY", "AxDfCdASdFzzxserDFWSD")
 	myKeyPubFile, err := os.CreateTemp("", "my_key.pub")
 	require.NoError(t, err)
@@ -126,7 +125,10 @@ func Test5_Functions(t *testing.T) {
 
 	defer t.Cleanup(func() {
 		t.Setenv("VULTR_API_KEY", "")
-		os.Remove(myKeyPubFile.Name())
+		err := os.Remove(myKeyPubFile.Name())
+		if err != nil {
+			t.Log("Error removing temp file:", err)
+		}
 	})
 
 	testCases := []struct {
