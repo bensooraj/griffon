@@ -34,6 +34,33 @@ func (g *GriffonBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) erro
 	return nil
 }
 
+func (s *SSHKeyBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
+	content, diags := block.Body.Content(SSHKeyBlockSchema)
+	switch {
+	case diags.HasErrors():
+		return diags
+	case len(content.Attributes) == 0:
+		return errors.New("ssh_key block must have attributes")
+	}
+
+	s.Name = block.Labels[0]
+
+	for attrName, attr := range content.Attributes {
+		value, diags := attr.Expr.Value(ctx)
+		if diags.HasErrors() {
+			return diags
+		}
+
+		switch attrName {
+		case "ssh_key":
+			s.SSHKey = value.AsString()
+		default:
+			return errors.New("unknown attribute " + attrName)
+		}
+	}
+	return nil
+}
+
 func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) (*Config, error) {
 	config := Config{}
 
@@ -65,31 +92,11 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 			config.Griffon = griffon
 		case "ssh_key":
 			for _, hclBlock := range hclBlocks {
-				sshKeyContent, diags := hclBlock.Body.Content(SSHKeyBlockSchema)
-				switch {
-				case diags.HasErrors():
-					return nil, diags
-				case len(sshKeyContent.Attributes) == 0:
-					return nil, errors.New("ssh_key block must have attributes")
+				var sshKey SSHKeyBlock
+				if err := sshKey.FromHCLBlock(hclBlock, ctx); err != nil {
+					return nil, err
 				}
-
-				sshKeyBlock := SSHKeyBlock{}
-				sshKeyBlock.Name = hclBlock.Labels[0]
-				for attrName, attr := range sshKeyContent.Attributes {
-					value, diags := attr.Expr.Value(ctx)
-					if diags.HasErrors() {
-						return nil, diags
-					}
-
-					switch attrName {
-					case "ssh_key":
-						sshKeyBlock.SSHKey = value.AsString()
-					default:
-						return nil, errors.New("unknown attribute " + attrName)
-					}
-				}
-
-				config.SSHKeys = append(config.SSHKeys, sshKeyBlock)
+				config.SSHKeys = append(config.SSHKeys, sshKey)
 			}
 		}
 	}
