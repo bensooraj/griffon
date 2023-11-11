@@ -1,6 +1,8 @@
 package main
 
-import "github.com/hashicorp/hcl/v2"
+import (
+	"github.com/hashicorp/hcl/v2"
+)
 
 var GriffonBlockSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{},
@@ -10,6 +12,11 @@ var GriffonBlockSchema = &hcl.BodySchema{
 	},
 }
 
+var DataBlockSchema = &hcl.BodySchema{
+	Blocks:     []hcl.BlockHeaderSchema{},
+	Attributes: []hcl.AttributeSchema{},
+}
+
 var SSHKeyBlockSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{},
 	Attributes: []hcl.AttributeSchema{
@@ -17,10 +24,53 @@ var SSHKeyBlockSchema = &hcl.BodySchema{
 	},
 }
 
+var StartupScriptBlockSchema = &hcl.BodySchema{
+	Blocks: []hcl.BlockHeaderSchema{},
+	Attributes: []hcl.AttributeSchema{
+		{Name: "script", Required: true},
+	},
+}
+
+var InstanceBlockSchema = &hcl.BodySchema{
+	Blocks: []hcl.BlockHeaderSchema{},
+	Attributes: []hcl.AttributeSchema{
+		{Name: "region", Required: true},
+		{Name: "plan", Required: true},
+		{Name: "os_id", Required: true},
+		{Name: "sshkey_id", Required: true},
+		{Name: "script_id", Required: true},
+		{Name: "hostname", Required: true},
+	},
+}
+
 var ConfigSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
 		{Type: "griffon", LabelNames: []string{}},
+		{Type: "data", LabelNames: []string{"type", "name"}},
 		{Type: "ssh_key", LabelNames: []string{"name"}},
+		{Type: "startup_script", LabelNames: []string{"name"}},
+		{Type: "instance", LabelNames: []string{"name"}},
 	},
 	Attributes: []hcl.AttributeSchema{},
+}
+
+// //////////////////////////////////////////////////////////////////////
+var PlanFilterSchema = &hcl.BodySchema{
+	Blocks: []hcl.BlockHeaderSchema{},
+	Attributes: []hcl.AttributeSchema{
+		{Name: "region", Required: true},
+		{Name: "vcpu_count", Required: false},
+		{Name: "ram", Required: false},
+		{Name: "disk", Required: false},
+	},
+}
+
+var OSFilterSchema = &hcl.BodySchema{
+	Blocks: []hcl.BlockHeaderSchema{},
+	Attributes: []hcl.AttributeSchema{
+		{Name: "type", Required: true},
+		{Name: "name", Required: true},
+		{Name: "arch", Required: true},
+		{Name: "family", Required: true},
+	},
 }

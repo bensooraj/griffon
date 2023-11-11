@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -61,6 +62,33 @@ func (s *SSHKeyBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error
 	return nil
 }
 
+func (s *StartupScriptBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
+	content, diags := block.Body.Content(StartupScriptBlockSchema)
+	switch {
+	case diags.HasErrors():
+		return diags
+	case len(content.Attributes) == 0:
+		return errors.New("startup_script block must have attributes")
+	}
+
+	s.Name = block.Labels[0]
+
+	for attrName, attr := range content.Attributes {
+		value, diags := attr.Expr.Value(ctx)
+		if diags.HasErrors() {
+			return diags
+		}
+
+		switch attrName {
+		case "script":
+			s.Script = value.AsString()
+		default:
+			return errors.New("unknown attribute " + attrName)
+		}
+	}
+	return nil
+}
+
 func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) (*Config, error) {
 	config := Config{}
 
@@ -98,6 +126,16 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 				}
 				config.SSHKeys = append(config.SSHKeys, sshKey)
 			}
+		case "startup_script":
+			for _, hclBlock := range hclBlocks {
+				var startupScript StartupScriptBlock
+				if err := startupScript.FromHCLBlock(hclBlock, ctx); err != nil {
+					return nil, err
+				}
+				config.StartupScripts = append(config.StartupScripts, startupScript)
+			}
+		default:
+			fmt.Println("unknown block type", blockName)
 		}
 	}
 
