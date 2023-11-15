@@ -13,7 +13,9 @@ var GriffonBlockSchema = &hcl.BodySchema{
 }
 
 var DataBlockSchema = &hcl.BodySchema{
-	Blocks:     []hcl.BlockHeaderSchema{},
+	Blocks: []hcl.BlockHeaderSchema{
+		{Type: "filter"},
+	},
 	Attributes: []hcl.AttributeSchema{},
 }
 
@@ -65,6 +67,13 @@ var PlanFilterSchema = &hcl.BodySchema{
 	},
 }
 
+type PlanFilterBlock struct {
+	Region    string
+	VCPUCount int64
+	RAM       int64
+	Disk      int64
+}
+
 var OSFilterSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{},
 	Attributes: []hcl.AttributeSchema{
@@ -73,4 +82,11 @@ var OSFilterSchema = &hcl.BodySchema{
 		{Name: "arch", Required: true},
 		{Name: "family", Required: true},
 	},
+}
+
+type OSFilterBlock struct {
+	Type   string
+	Name   string
+	Arch   string
+	Family string
 }

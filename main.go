@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 func main() {
@@ -19,5 +17,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	spew.Dump(config)
+	_ = config
+	// spew.Dump(config)
 }

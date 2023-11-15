@@ -89,6 +89,101 @@ func (s *StartupScriptBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext
 	return nil
 }
 
+func (d *DataBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
+	content, diags := block.Body.Content(DataBlockSchema)
+	if diags.HasErrors() {
+		return diags
+	}
+
+	// Labels
+	d.Type = block.Labels[0]
+	d.Name = block.Labels[1]
+	// Blocks
+	var filterBlock *hcl.Block
+	blocks := content.Blocks.OfType("filter")
+	if d.Type != "region" && len(blocks) != 1 {
+		return errors.New("data block must have one filter block")
+	} else if len(blocks) == 1 {
+		filterBlock = blocks[0]
+	}
+
+	switch d.Type {
+	case "region":
+		fmt.Println("- data::region -")
+	case "plan":
+		fmt.Println("- data::plan -")
+		filterContent, diags := filterBlock.Body.Content(PlanFilterSchema)
+		if diags.HasErrors() {
+			return diags
+		}
+		var pf PlanFilterBlock
+		for attrName, attr := range filterContent.Attributes {
+			vars := attr.Expr.Variables()
+			if len(vars) > 0 {
+				fmt.Println("vars:", vars)
+				for _, traversal := range vars {
+					for _, step := range traversal {
+						fmt.Printf("step: %+v\n", step)
+						switch t := step.(type) {
+						case hcl.TraverseAttr:
+							fmt.Println("attr:", t.Name)
+						case hcl.TraverseIndex:
+							fmt.Println("index:", t.Key)
+						case hcl.TraverseRoot:
+							fmt.Println("root:", t.Name)
+						default:
+							fmt.Println("unknown traversal type", t)
+						}
+					}
+				}
+				continue
+			}
+			value, diags := attr.Expr.Value(ctx)
+			if diags.HasErrors() {
+				return diags
+			}
+			switch attrName {
+			case "region":
+				pf.Region = value.AsString()
+			case "vcpu_count":
+				pf.VCPUCount, _ = value.AsBigFloat().Int64()
+			case "ram":
+				pf.RAM, _ = value.AsBigFloat().Int64()
+			case "disk":
+				pf.Disk, _ = value.AsBigFloat().Int64()
+			}
+		}
+		fmt.Printf("filter: %+v\n", pf)
+	case "os":
+		fmt.Println("- data::os -")
+		filterContent, diags := filterBlock.Body.Content(OSFilterSchema)
+		if diags.HasErrors() {
+			return diags
+		}
+		var osf OSFilterBlock
+		for attrName, attr := range filterContent.Attributes {
+			value, diags := attr.Expr.Value(ctx)
+			if diags.HasErrors() {
+				return diags
+			}
+			switch attrName {
+			case "type":
+				osf.Type = value.AsString()
+			case "name":
+				osf.Name = value.AsString()
+			case "arch":
+				osf.Arch = value.AsString()
+			case "family":
+				osf.Family = value.AsString()
+			}
+		}
+		fmt.Printf("filter: %+v\n", osf)
+	default:
+		return errors.New("unknown data type " + d.Type)
+	}
+	return nil
+}
+
 func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) (*Config, error) {
 	config := Config{}
 
@@ -108,6 +203,7 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 
 	blocks := bodyContent.Blocks.ByType()
 	for blockName, hclBlocks := range blocks {
+		fmt.Println("blockName:", blockName)
 		switch blockName {
 		case "griffon":
 			if len(hclBlocks) != 1 {
@@ -133,6 +229,13 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 					return nil, err
 				}
 				config.StartupScripts = append(config.StartupScripts, startupScript)
+			}
+		case "data":
+			for _, hclBlock := range hclBlocks {
+				var data DataBlock
+				if err := data.FromHCLBlock(hclBlock, ctx); err != nil {
+					return nil, err
+				}
 			}
 		default:
 			fmt.Println("unknown block type", blockName)
