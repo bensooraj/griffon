@@ -3,13 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 )
 
-func (g *GriffonBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
+func (g *GriffonBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 	content, diags := block.Body.Content(GriffonBlockSchema)
 	switch {
 	case diags.HasErrors():
@@ -36,16 +35,33 @@ func (g *GriffonBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) erro
 	return nil
 }
 
-func (s *SSHKeyBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
-	content, diags := block.Body.Content(SSHKeyBlockSchema)
+func (s *SSHKeyBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
+	content, remain, diags := block.Body.PartialContent(DependsOnSchema)
 	switch {
 	case diags.HasErrors():
 		return diags
 	case len(content.Attributes) == 0:
 		return errors.New("ssh_key block must have attributes")
 	}
+	s.Config = remain
 
-	s.Name = block.Labels[0]
+	if attr, ok := content.Attributes["depends_on"]; ok {
+		s.DependsOn, diags = ExprAsMap(attr.Expr)
+		if diags.HasErrors() {
+			return diags
+		}
+	}
+	return nil
+}
+
+func (s *SSHKeyBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
+	content, _, diags := s.Config.PartialContent(SSHKeyBlockSchema)
+	switch {
+	case diags.HasErrors():
+		return diags
+	case len(content.Attributes) == 0:
+		return errors.New("ssh_key block must have attributes")
+	}
 
 	for attrName, attr := range content.Attributes {
 		value, diags := attr.Expr.Value(ctx)
@@ -63,22 +79,14 @@ func (s *SSHKeyBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error
 	return nil
 }
 
-func (s *StartupScriptBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
-	// Calculate dependencies and store them in s.Config
-	err := s.CalculateDependency(block, ctx)
-	if err != nil {
-		return err
-	}
-
-	content, _, diags := block.Body.PartialContent(StartupScriptBlockSchema)
+func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
+	content, _, diags := s.Config.PartialContent(StartupScriptBlockSchema)
 	switch {
 	case diags.HasErrors():
 		return diags
 	case len(content.Attributes) == 0:
 		return errors.New("startup_script block must have attributes")
 	}
-
-	s.Name = block.Labels[0]
 
 	for attrName, attr := range content.Attributes {
 		value, diags := attr.Expr.Value(ctx)
@@ -96,7 +104,7 @@ func (s *StartupScriptBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext
 	return nil
 }
 
-func (s *StartupScriptBlock) CalculateDependency(block *hcl.Block, ctx *hcl.EvalContext) error {
+func (s *StartupScriptBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 	content, remain, diags := block.Body.PartialContent(DependsOnSchema)
 	switch {
 	case diags.HasErrors():
@@ -191,7 +199,10 @@ func (d *DataBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 }
 
 func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) (*Config, error) {
-	config := Config{}
+	config := Config{
+		SSHKeys:        make(map[string]SSHKeyBlock),
+		StartupScripts: make(map[string]StartupScriptBlock),
+	}
 
 	file, diags := hclsyntax.ParseConfig(src, filename, hcl.Pos{Line: 1, Column: 1})
 	if diags.HasErrors() {
@@ -216,25 +227,31 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 				return nil, errors.New("only one griffon block allowed")
 			}
 			var griffon GriffonBlock
-			if err := griffon.FromHCLBlock(hclBlocks[0], ctx); err != nil {
+			if err := griffon.PreProcessHCLBlock(hclBlocks[0], ctx); err != nil {
 				return nil, err
 			}
 			config.Griffon = griffon
 		case "ssh_key":
 			for _, hclBlock := range hclBlocks {
 				var sshKey SSHKeyBlock
-				if err := sshKey.FromHCLBlock(hclBlock, ctx); err != nil {
+				sshKey.Name = hclBlock.Labels[0]
+
+				if err := sshKey.PreProcessHCLBlock(hclBlock, ctx); err != nil {
 					return nil, err
 				}
-				config.SSHKeys = append(config.SSHKeys, sshKey)
+
+				config.SSHKeys[sshKey.Name] = sshKey
 			}
 		case "startup_script":
 			for _, hclBlock := range hclBlocks {
 				var startupScript StartupScriptBlock
-				if err := startupScript.FromHCLBlock(hclBlock, ctx); err != nil {
+				startupScript.Name = hclBlock.Labels[0]
+
+				if err := startupScript.PreProcessHCLBlock(hclBlock, ctx); err != nil {
 					return nil, err
 				}
-				config.StartupScripts = append(config.StartupScripts, startupScript)
+
+				config.StartupScripts[startupScript.Name] = startupScript
 			}
 		case "data":
 			for _, hclBlock := range hclBlocks {
@@ -248,22 +265,22 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 		}
 	}
 
-	fmt.Println()
-	log.Println("~~~~~~~~~~~ section 2 ~~~~~~~~~~~")
-	//
-	for blockName, hclBlocks := range blocks {
-		switch blockName {
-		case "startup_script":
-			for _, hclBlock := range hclBlocks {
-				var startupScript StartupScriptBlock
-				if err := startupScript.CalculateDependency(hclBlock, ctx); err != nil {
-					return nil, err
-				}
-			}
-		default:
-			fmt.Println("unknown block type", blockName)
-		}
-	}
+	// fmt.Println()
+	// log.Println("~~~~~~~~~~~ section 2 ~~~~~~~~~~~")
+	// //
+	// for blockName, hclBlocks := range blocks {
+	// 	switch blockName {
+	// 	case "startup_script":
+	// 		for _, hclBlock := range hclBlocks {
+	// 			var startupScript StartupScriptBlock
+	// 			if err := startupScript.(hclBlock, ctx); err != nil {
+	// 				return nil, err
+	// 			}
+	// 		}
+	// 	default:
+	// 		fmt.Println("unknown block type", blockName)
+	// 	}
+	// }
 	fmt.Println()
 
 	return &config, nil

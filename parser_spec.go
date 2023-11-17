@@ -34,10 +34,10 @@ func ParseHCLUsingSpec(filename string, src []byte, ctx *hcl.EvalContext) (*Conf
 		case "ssh_key":
 			sshKeys := v.AsValueSlice()
 			for _, sshKey := range sshKeys {
-				config.SSHKeys = append(config.SSHKeys, SSHKeyBlock{
+				config.SSHKeys[sshKey.GetAttr("name").AsString()] = SSHKeyBlock{
 					Name:   sshKey.GetAttr("name").AsString(),
 					SSHKey: sshKey.GetAttr("ssh_key").AsString(),
-				})
+				}
 			}
 		default:
 			return nil, fmt.Errorf("unknown block type %q", vName)
