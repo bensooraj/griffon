@@ -9,4 +9,5 @@ run:
 		main.go \
 		parser.go \
 		parser_body_schema.go \
-		parser_spec.go
+		parser_spec.go \
+		utils.go

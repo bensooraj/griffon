@@ -19,8 +19,10 @@ type SSHKeyBlock struct {
 }
 
 type StartupScriptBlock struct {
-	Name   string `hcl:"name,label"`
-	Script string `hcl:"script"`
+	Name      string `hcl:"name,label"`
+	Script    string `hcl:"script"`
+	Config    hcl.Body
+	DependsOn map[string][]string
 }
 
 type DataBlock struct {

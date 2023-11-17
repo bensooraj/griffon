@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -63,7 +64,13 @@ func (s *SSHKeyBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error
 }
 
 func (s *StartupScriptBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
-	content, diags := block.Body.Content(StartupScriptBlockSchema)
+	// Calculate dependencies and store them in s.Config
+	err := s.CalculateDependency(block, ctx)
+	if err != nil {
+		return err
+	}
+
+	content, _, diags := block.Body.PartialContent(StartupScriptBlockSchema)
 	switch {
 	case diags.HasErrors():
 		return diags
@@ -84,6 +91,25 @@ func (s *StartupScriptBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext
 			s.Script = value.AsString()
 		default:
 			return errors.New("unknown attribute " + attrName)
+		}
+	}
+	return nil
+}
+
+func (s *StartupScriptBlock) CalculateDependency(block *hcl.Block, ctx *hcl.EvalContext) error {
+	content, remain, diags := block.Body.PartialContent(DependsOnSchema)
+	switch {
+	case diags.HasErrors():
+		return diags
+	case len(content.Attributes) == 0:
+		return errors.New("startup_script block must have attributes")
+	}
+	s.Config = remain
+
+	if attr, ok := content.Attributes["depends_on"]; ok {
+		s.DependsOn, diags = ExprAsMap(attr.Expr)
+		if diags.HasErrors() {
+			return diags
 		}
 	}
 	return nil
@@ -118,26 +144,6 @@ func (d *DataBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 		}
 		var pf PlanFilterBlock
 		for attrName, attr := range filterContent.Attributes {
-			vars := attr.Expr.Variables()
-			if len(vars) > 0 {
-				fmt.Println("vars:", vars)
-				for _, traversal := range vars {
-					for _, step := range traversal {
-						fmt.Printf("step: %+v\n", step)
-						switch t := step.(type) {
-						case hcl.TraverseAttr:
-							fmt.Println("attr:", t.Name)
-						case hcl.TraverseIndex:
-							fmt.Println("index:", t.Key)
-						case hcl.TraverseRoot:
-							fmt.Println("root:", t.Name)
-						default:
-							fmt.Println("unknown traversal type", t)
-						}
-					}
-				}
-				continue
-			}
 			value, diags := attr.Expr.Value(ctx)
 			if diags.HasErrors() {
 				return diags
@@ -241,6 +247,24 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 			fmt.Println("unknown block type", blockName)
 		}
 	}
+
+	fmt.Println()
+	log.Println("~~~~~~~~~~~ section 2 ~~~~~~~~~~~")
+	//
+	for blockName, hclBlocks := range blocks {
+		switch blockName {
+		case "startup_script":
+			for _, hclBlock := range hclBlocks {
+				var startupScript StartupScriptBlock
+				if err := startupScript.CalculateDependency(hclBlock, ctx); err != nil {
+					return nil, err
+				}
+			}
+		default:
+			fmt.Println("unknown block type", blockName)
+		}
+	}
+	fmt.Println()
 
 	return &config, nil
 }

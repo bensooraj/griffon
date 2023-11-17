@@ -57,6 +57,13 @@ var ConfigSchema = &hcl.BodySchema{
 }
 
 // //////////////////////////////////////////////////////////////////////
+var DependsOnSchema = &hcl.BodySchema{
+	Blocks: []hcl.BlockHeaderSchema{},
+	Attributes: []hcl.AttributeSchema{
+		{Name: "depends_on", Required: false},
+	},
+}
+
 var PlanFilterSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{},
 	Attributes: []hcl.AttributeSchema{

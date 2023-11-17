@@ -12,6 +12,7 @@ data "plan" "all" {
         ram = 1024
         disk = 20
     }
+    // depends_on = [data.region.current]
 }
 
 data "os" "centos" {
@@ -25,10 +26,12 @@ data "os" "centos" {
 
 ssh_key "my_key" {
     ssh_key = "ssh-rsa AAAAB3NzaC1yc2E"
+    // depends_on = [data.plan.all]
 }
 
 startup_script "my_script" {
     script = "#!/bin/bash\necho 'hello world'"
+    depends_on = [ssh_key.my_key, data.region.current]
 }
 
 instance "my_vps" {
