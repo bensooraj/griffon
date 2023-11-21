@@ -6,10 +6,12 @@ type Config struct {
 	Griffon        GriffonBlock                  `hcl:"griffon,block"`
 	SSHKeys        map[string]SSHKeyBlock        `hcl:"ssh_key,block"`
 	StartupScripts map[string]StartupScriptBlock `hcl:"startup_script,block"`
+	Instances      map[string]InstanceBlock      `hcl:"instance,block"`
 	DataBlocks     map[string]map[string]Block   `hcl:"data,block"`
 }
 
 type GriffonBlock struct {
+	GraphID     int64
 	Region      string `hcl:"region,attr"`
 	VultrAPIKey string `hcl:"vultr_api_key"`
 }
