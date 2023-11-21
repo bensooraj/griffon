@@ -15,6 +15,7 @@ type GriffonBlock struct {
 }
 
 type SSHKeyBlock struct {
+	GraphID   int64
 	Name      string `hcl:"name,label"`
 	SSHKey    string `hcl:"ssh_key"`
 	Config    hcl.Body
@@ -22,6 +23,7 @@ type SSHKeyBlock struct {
 }
 
 type StartupScriptBlock struct {
+	GraphID   int64
 	Name      string `hcl:"name,label"`
 	Script    string `hcl:"script"`
 	Config    hcl.Body
@@ -29,6 +31,7 @@ type StartupScriptBlock struct {
 }
 
 type DataBlock struct {
+	GraphID   int64
 	Type      string `hcl:"type,label"`
 	Name      string `hcl:"name,label"`
 	Config    hcl.Body
@@ -36,7 +39,7 @@ type DataBlock struct {
 }
 
 type RegionDataBlock struct {
-	ID        string   `json:"id"`
+	VultrID   string   `json:"id"`
 	City      string   `json:"city"`
 	Country   string   `json:"country"`
 	Continent string   `json:"continent"`
@@ -45,7 +48,7 @@ type RegionDataBlock struct {
 }
 
 type PlanDataBlock struct {
-	ID          string   `json:"id"`
+	VultrID     string   `json:"id"`
 	VcpuCount   int      `json:"vcpu_count"`
 	Ram         int      `json:"ram"`
 	Disk        int      `json:"disk"`
@@ -58,14 +61,15 @@ type PlanDataBlock struct {
 }
 
 type OSDataBlock struct {
-	ID     int    `json:"id"`
-	OSName string `json:"name"`
-	Arch   string `json:"arch"`
-	Family string `json:"family"`
+	VultrID int    `json:"id"`
+	OSName  string `json:"name"`
+	Arch    string `json:"arch"`
+	Family  string `json:"family"`
 	DataBlock
 }
 
 type InstanceBlock struct {
+	GraphID         int64
 	Name            string            `hcl:"name,label"`
 	Region          string            `hcl:"region,attr"`
 	Plan            string            `hcl:"plan,attr"`
@@ -79,6 +83,7 @@ type InstanceBlock struct {
 }
 
 type Block interface {
+	ID() int64
 	// Separate the block into its configuration and dependencies
 	PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error
 	// Process the configuration

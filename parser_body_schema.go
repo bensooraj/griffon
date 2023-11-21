@@ -120,6 +120,10 @@ func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
+func (d *DataBlock) ID() int64 {
+	return d.GraphID
+}
+
 func (d *DataBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 	content, remain, diags := block.Body.PartialContent(DependsOnSchema)
 	if diags.HasErrors() {

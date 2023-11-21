@@ -42,8 +42,8 @@ func TestBodySchemaParser(t *testing.T) {
 			}`),
 			expected: Config{
 				Griffon: GriffonBlock{Region: "nyc1", VultrAPIKey: "1234567890"},
-				SSHKeys: []SSHKeyBlock{
-					{Name: "my_key", SSHKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADA"},
+				SSHKeys: map[string]SSHKeyBlock{
+					"my_key": {Name: "my_key", SSHKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADA"},
 				},
 			},
 		},
@@ -59,8 +59,8 @@ func TestBodySchemaParser(t *testing.T) {
 			}`, myKeyPubFile.Name())),
 			expected: Config{
 				Griffon: GriffonBlock{Region: "AMS", VultrAPIKey: "axdfcdasdfzzxserdfwsd"},
-				SSHKeys: []SSHKeyBlock{
-					{Name: "my_key", SSHKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADA"},
+				SSHKeys: map[string]SSHKeyBlock{
+					"my_key": {Name: "my_key", SSHKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADA"},
 				},
 			},
 		},
@@ -77,7 +77,7 @@ func TestBodySchemaParser(t *testing.T) {
 			}
 			require.NoError(t, err)
 			require.Equalf(t, tC.expected.Griffon, config.Griffon, "GriffonBlock parsed incorrectly")
-			require.Equalf(t, tC.expected.SSHKeys[0], config.SSHKeys[0], "GriffonBlock parsed incorrectly")
+			require.Equalf(t, tC.expected.SSHKeys["my_key"], config.SSHKeys["my_key"], "GriffonBlock parsed incorrectly")
 		})
 	}
 }
