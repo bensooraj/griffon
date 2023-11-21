@@ -37,11 +37,8 @@ func (g *GriffonBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext
 
 func (s *SSHKeyBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 	content, remain, diags := block.Body.PartialContent(DependsOnSchema)
-	switch {
-	case diags.HasErrors():
+	if diags.HasErrors() {
 		return diags
-	case len(content.Attributes) == 0:
-		return errors.New("ssh_key block must have attributes")
 	}
 	s.Config = remain
 
@@ -79,6 +76,25 @@ func (s *SSHKeyBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
+func (s *StartupScriptBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
+	content, remain, diags := block.Body.PartialContent(DependsOnSchema)
+	switch {
+	case diags.HasErrors():
+		return diags
+	case len(content.Attributes) == 0:
+		return errors.New("startup_script block must have attributes")
+	}
+	s.Config = remain
+
+	if attr, ok := content.Attributes["depends_on"]; ok {
+		s.DependsOn, diags = ExprAsMap(attr.Expr)
+		if diags.HasErrors() {
+			return diags
+		}
+	}
+	return nil
+}
+
 func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	content, _, diags := s.Config.PartialContent(StartupScriptBlockSchema)
 	switch {
@@ -104,22 +120,24 @@ func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
-func (s *StartupScriptBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
+func (d *DataBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 	content, remain, diags := block.Body.PartialContent(DependsOnSchema)
-	switch {
-	case diags.HasErrors():
+	if diags.HasErrors() {
 		return diags
-	case len(content.Attributes) == 0:
-		return errors.New("startup_script block must have attributes")
 	}
-	s.Config = remain
+	d.Config = remain
 
 	if attr, ok := content.Attributes["depends_on"]; ok {
-		s.DependsOn, diags = ExprAsMap(attr.Expr)
+		d.DependsOn, diags = ExprAsMap(attr.Expr)
 		if diags.HasErrors() {
 			return diags
 		}
 	}
+	return nil
+}
+
+func (r *RegionDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
+	// Set the region ID using the Griffon Block
 	return nil
 }
 
@@ -202,6 +220,7 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 	config := Config{
 		SSHKeys:        make(map[string]SSHKeyBlock),
 		StartupScripts: make(map[string]StartupScriptBlock),
+		DataBlocks:     make(map[string]map[string]Block),
 	}
 
 	file, diags := hclsyntax.ParseConfig(src, filename, hcl.Pos{Line: 1, Column: 1})
@@ -254,10 +273,36 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 				config.StartupScripts[startupScript.Name] = startupScript
 			}
 		case "data":
+			config.DataBlocks["region"] = make(map[string]Block)
+			config.DataBlocks["plan"] = make(map[string]Block)
+			config.DataBlocks["os"] = make(map[string]Block)
+
 			for _, hclBlock := range hclBlocks {
-				var data DataBlock
-				if err := data.FromHCLBlock(hclBlock, ctx); err != nil {
-					return nil, err
+				dataBlock := DataBlock{
+					Type: hclBlock.Labels[0],
+					Name: hclBlock.Labels[1],
+				}
+
+				switch dataBlock.Type {
+				case "region":
+					regionData := RegionDataBlock{DataBlock: dataBlock}
+					if err := regionData.PreProcessHCLBlock(hclBlock, ctx); err != nil {
+						return nil, err
+					}
+					config.DataBlocks[dataBlock.Type][dataBlock.Name] = &regionData
+
+				case "plan":
+					planData := PlanDataBlock{DataBlock: dataBlock}
+					if err := planData.PreProcessHCLBlock(hclBlock, ctx); err != nil {
+						return nil, err
+					}
+				case "os":
+					osData := OSDataBlock{DataBlock: dataBlock}
+					if err := osData.PreProcessHCLBlock(hclBlock, ctx); err != nil {
+						return nil, err
+					}
+				default:
+					return nil, errors.New("unknown data type " + dataBlock.Type)
 				}
 			}
 		default:
