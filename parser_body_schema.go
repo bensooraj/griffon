@@ -37,6 +37,9 @@ func (g *GriffonBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext
 }
 
 // SSHKeyBlock
+func (s *SSHKeyBlock) ID() int64 {
+	return s.GraphID
+}
 func (s *SSHKeyBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 	content, remain, diags := block.Body.PartialContent(DependsOnSchema)
 	if diags.HasErrors() {
@@ -79,6 +82,9 @@ func (s *SSHKeyBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 }
 
 // StartupScriptBlock
+func (s *StartupScriptBlock) ID() int64 {
+	return s.GraphID
+}
 func (s *StartupScriptBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 	content, remain, diags := block.Body.PartialContent(DependsOnSchema)
 	switch {
@@ -120,6 +126,68 @@ func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 			return errors.New("unknown attribute " + attrName)
 		}
 	}
+	return nil
+}
+
+// IntanceBlock
+func (i *InstanceBlock) ID() int64 {
+	return i.GraphID
+}
+
+func (i *InstanceBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
+	content, remain, diags := block.Body.PartialContent(DependsOnSchema)
+	if diags.HasErrors() {
+		return diags
+	}
+	i.Config = remain
+
+	if attr, ok := content.Attributes["depends_on"]; ok {
+		i.DependsOn, diags = ExprAsMap(attr.Expr)
+		if diags.HasErrors() {
+			return diags
+		}
+	}
+	return nil
+}
+
+func (i *InstanceBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
+	content, _, diags := i.Config.PartialContent(InstanceBlockSchema)
+	switch {
+	case diags.HasErrors():
+		return diags
+	case len(content.Attributes) == 0:
+		return errors.New("instance block must have attributes")
+	}
+
+	for attrName, attr := range content.Attributes {
+		value, diags := attr.Expr.Value(ctx)
+		if diags.HasErrors() {
+			return diags
+		}
+
+		switch attrName {
+		case "region":
+			i.Region = value.AsString()
+		case "plan":
+			i.Plan = value.AsString()
+		case "os":
+			i.OS = value.AsString()
+		case "ssh_key_id":
+			i.SshKeyID = value.AsString()
+		case "startup_script_id":
+
+		case "hostname":
+			i.Hostname = value.AsString()
+		case "tag":
+			i.Tag = make(map[string]string)
+
+			fmt.Println("tag:", value.AsString(), value.AsValueMap())
+			for key, ctyVal := range value.AsValueMap() {
+				i.Tag[key] = ctyVal.AsString()
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -282,6 +350,15 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 
 				config.StartupScripts[startupScript.Name] = startupScript
 			}
+		case "instance":
+			for _, hclBlock := range hclBlocks {
+				var instance InstanceBlock
+				instance.Name = hclBlock.Labels[0]
+
+				if err := instance.PreProcessHCLBlock(hclBlock, ctx); err != nil {
+					return nil, err
+				}
+			}
 		case "data":
 			config.DataBlocks["region"] = make(map[string]Block)
 			config.DataBlocks["plan"] = make(map[string]Block)
@@ -320,22 +397,6 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 		}
 	}
 
-	// fmt.Println()
-	// log.Println("~~~~~~~~~~~ section 2 ~~~~~~~~~~~")
-	// //
-	// for blockName, hclBlocks := range blocks {
-	// 	switch blockName {
-	// 	case "startup_script":
-	// 		for _, hclBlock := range hclBlocks {
-	// 			var startupScript StartupScriptBlock
-	// 			if err := startupScript.(hclBlock, ctx); err != nil {
-	// 				return nil, err
-	// 			}
-	// 		}
-	// 	default:
-	// 		fmt.Println("unknown block type", blockName)
-	// 	}
-	// }
 	fmt.Println()
 
 	return &config, nil

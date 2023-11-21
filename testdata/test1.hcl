@@ -49,4 +49,6 @@ instance "my_vps" {
         tier = "web"
         env = "dev"
     }
+
+    depends_on = [data.region.current, data.plan.all, data.os.centos, ssh_key.my_key, startup_script.my_script]
 }
