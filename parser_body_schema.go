@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 )
 
+// GriffonBlock
 func (g *GriffonBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 	content, diags := block.Body.Content(GriffonBlockSchema)
 	switch {
@@ -35,6 +36,7 @@ func (g *GriffonBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext
 	return nil
 }
 
+// SSHKeyBlock
 func (s *SSHKeyBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 	content, remain, diags := block.Body.PartialContent(DependsOnSchema)
 	if diags.HasErrors() {
@@ -76,6 +78,7 @@ func (s *SSHKeyBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
+// StartupScriptBlock
 func (s *StartupScriptBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 	content, remain, diags := block.Body.PartialContent(DependsOnSchema)
 	switch {
@@ -120,6 +123,7 @@ func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
+// DataBlock
 func (d *DataBlock) ID() int64 {
 	return d.GraphID
 }
@@ -129,94 +133,96 @@ func (d *DataBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) e
 	if diags.HasErrors() {
 		return diags
 	}
-	d.Config = remain
-
 	if attr, ok := content.Attributes["depends_on"]; ok {
 		d.DependsOn, diags = ExprAsMap(attr.Expr)
 		if diags.HasErrors() {
 			return diags
 		}
 	}
-	return nil
-}
 
-func (r *RegionDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
-	// Set the region ID using the Griffon Block
-	return nil
-}
-
-func (d *DataBlock) FromHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
-	content, diags := block.Body.Content(DataBlockSchema)
+	filterBodyContent, _, diags := remain.PartialContent(DataBlockSchema)
 	if diags.HasErrors() {
 		return diags
 	}
-
-	// Labels
-	d.Type = block.Labels[0]
-	d.Name = block.Labels[1]
-	// Blocks
-	var filterBlock *hcl.Block
-	blocks := content.Blocks.OfType("filter")
-	if d.Type != "region" && len(blocks) != 1 {
-		return errors.New("data block must have one filter block")
-	} else if len(blocks) == 1 {
-		filterBlock = blocks[0]
-	}
-
 	switch d.Type {
 	case "region":
-		fmt.Println("- data::region -")
-	case "plan":
-		fmt.Println("- data::plan -")
-		filterContent, diags := filterBlock.Body.Content(PlanFilterSchema)
-		if diags.HasErrors() {
-			return diags
+		// do nothing
+	case "plan", "os":
+		if len(filterBodyContent.Blocks) != 1 {
+			return fmt.Errorf("%s block %s must have one filter block", d.Type, d.Name)
 		}
-		var pf PlanFilterBlock
-		for attrName, attr := range filterContent.Attributes {
-			value, diags := attr.Expr.Value(ctx)
-			if diags.HasErrors() {
-				return diags
-			}
-			switch attrName {
-			case "region":
-				pf.Region = value.AsString()
-			case "vcpu_count":
-				pf.VCPUCount, _ = value.AsBigFloat().Int64()
-			case "ram":
-				pf.RAM, _ = value.AsBigFloat().Int64()
-			case "disk":
-				pf.Disk, _ = value.AsBigFloat().Int64()
-			}
-		}
-		fmt.Printf("filter: %+v\n", pf)
-	case "os":
-		fmt.Println("- data::os -")
-		filterContent, diags := filterBlock.Body.Content(OSFilterSchema)
-		if diags.HasErrors() {
-			return diags
-		}
-		var osf OSFilterBlock
-		for attrName, attr := range filterContent.Attributes {
-			value, diags := attr.Expr.Value(ctx)
-			if diags.HasErrors() {
-				return diags
-			}
-			switch attrName {
-			case "type":
-				osf.Type = value.AsString()
-			case "name":
-				osf.Name = value.AsString()
-			case "arch":
-				osf.Arch = value.AsString()
-			case "family":
-				osf.Family = value.AsString()
-			}
-		}
-		fmt.Printf("filter: %+v\n", osf)
+		d.Config = filterBodyContent.Blocks[0].Body
 	default:
-		return errors.New("unknown data type " + d.Type)
+		return errors.New("unknown data type " + d.Type + " with name " + d.Name)
 	}
+	return nil
+}
+
+// DataBlock -> RegionDataBlock
+func (r *RegionDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
+	// Nothing to do here really
+	return nil
+}
+
+// DataBlock -> PlanDataBlock
+func (p *PlanDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
+	content, diags := p.Config.Content(PlanFilterSchema)
+	switch {
+	case diags.HasErrors():
+		return diags
+	case len(content.Attributes) == 0:
+		return errors.New("plan filter block must have attributes")
+	}
+
+	var pf PlanFilterBlock
+	for attrName, attr := range content.Attributes {
+		value, diags := attr.Expr.Value(ctx)
+		if diags.HasErrors() {
+			return diags
+		}
+		switch attrName {
+		case "region":
+			pf.Region = value.AsString()
+		case "vcpu_count":
+			pf.VCPUCount, _ = value.AsBigFloat().Int64()
+		case "ram":
+			pf.RAM, _ = value.AsBigFloat().Int64()
+		case "disk":
+			pf.Disk, _ = value.AsBigFloat().Int64()
+		}
+	}
+	fmt.Printf("filter: %+v\n", pf)
+	return nil
+}
+
+// DataBlock -> OSDataBlock
+func (o *OSDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
+	content, diags := o.Config.Content(OSFilterSchema)
+	switch {
+	case diags.HasErrors():
+		return diags
+	case len(content.Attributes) == 0:
+		return errors.New("os filter block must have attributes")
+	}
+
+	var osf OSFilterBlock
+	for attrName, attr := range content.Attributes {
+		value, diags := attr.Expr.Value(ctx)
+		if diags.HasErrors() {
+			return diags
+		}
+		switch attrName {
+		case "type":
+			osf.Type = value.AsString()
+		case "name":
+			osf.Name = value.AsString()
+		case "arch":
+			osf.Arch = value.AsString()
+		case "family":
+			osf.Family = value.AsString()
+		}
+	}
+	fmt.Printf("filter: %+v\n", osf)
 	return nil
 }
 
