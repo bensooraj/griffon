@@ -40,6 +40,15 @@ func (g *GriffonBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext
 	return nil
 }
 
+func (g *GriffonBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
+	// Nothing to do here really
+	return nil
+}
+
+func (g *GriffonBlock) Dependencies() map[string][]string {
+	return nil
+}
+
 // SSHKeyBlock
 func (s *SSHKeyBlock) ID() int64 {
 	return s.GraphID
@@ -83,6 +92,10 @@ func (s *SSHKeyBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 		}
 	}
 	return nil
+}
+
+func (s *SSHKeyBlock) Dependencies() map[string][]string {
+	return s.DependsOn
 }
 
 // StartupScriptBlock
@@ -131,6 +144,10 @@ func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 		}
 	}
 	return nil
+}
+
+func (s *StartupScriptBlock) Dependencies() map[string][]string {
+	return s.DependsOn
 }
 
 // IntanceBlock
@@ -195,6 +212,10 @@ func (i *InstanceBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
+func (i *InstanceBlock) Dependencies() map[string][]string {
+	return i.DependsOn
+}
+
 // DataBlock
 func (d *DataBlock) ID() int64 {
 	return d.GraphID
@@ -228,6 +249,10 @@ func (d *DataBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) e
 		return errors.New("unknown data type " + d.Type + " with name " + d.Name)
 	}
 	return nil
+}
+
+func (d *DataBlock) Dependencies() map[string][]string {
+	return d.DependsOn
 }
 
 // DataBlock -> RegionDataBlock
@@ -320,8 +345,10 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 		return nil, errors.New("no blocks found")
 	}
 
+	blockPathToGraphID := make(map[string]int64)
+
 	dependencyGraph := NewGraph()
-	var dGraphNodeCount int64 = 1
+	var dGraphNodeCount int64 = 0
 
 	blocks := bodyContent.Blocks.ByType()
 	for blockName, hclBlocks := range blocks {
@@ -337,6 +364,8 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 			}
 			griffon.GraphID = 0
 			config.Griffon = griffon
+			blockPathToGraphID[blockName] = griffon.GraphID
+
 			dependencyGraph.AddNode(&griffon)
 		case "ssh_key":
 			for _, hclBlock := range hclBlocks {
@@ -348,6 +377,7 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 				}
 				dGraphNodeCount++
 				sshKey.GraphID = dGraphNodeCount
+				blockPathToGraphID[BuildBlockPath(blockName, sshKey.Name)] = sshKey.GraphID
 
 				config.SSHKeys[sshKey.Name] = sshKey
 				dependencyGraph.AddNode(&sshKey)
@@ -362,6 +392,7 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 				}
 				dGraphNodeCount++
 				startupScript.GraphID = dGraphNodeCount
+				blockPathToGraphID[BuildBlockPath(blockName, startupScript.Name)] = startupScript.GraphID
 
 				config.StartupScripts[startupScript.Name] = startupScript
 				dependencyGraph.AddNode(&startupScript)
@@ -376,6 +407,7 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 				}
 				dGraphNodeCount++
 				instance.GraphID = dGraphNodeCount
+				blockPathToGraphID[BuildBlockPath(blockName, instance.Name)] = instance.GraphID
 
 				config.Instances[instance.Name] = instance
 				dependencyGraph.AddNode(&instance)
@@ -386,10 +418,13 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 			config.DataBlocks["os"] = make(map[string]Block)
 
 			for _, hclBlock := range hclBlocks {
+				dGraphNodeCount++
 				dataBlock := DataBlock{
-					Type: hclBlock.Labels[0],
-					Name: hclBlock.Labels[1],
+					Type:    hclBlock.Labels[0],
+					Name:    hclBlock.Labels[1],
+					GraphID: dGraphNodeCount,
 				}
+				blockPathToGraphID[BuildBlockPath(blockName, dataBlock.Type, dataBlock.Name)] = dataBlock.GraphID
 
 				switch dataBlock.Type {
 				case "region":
@@ -397,30 +432,24 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 					if err := regionData.PreProcessHCLBlock(hclBlock, ctx); err != nil {
 						return nil, err
 					}
-					dGraphNodeCount++
-					regionData.GraphID = dGraphNodeCount
-					config.DataBlocks[dataBlock.Type][dataBlock.Name] = &regionData
 
+					config.DataBlocks[dataBlock.Type][dataBlock.Name] = &regionData
 					dependencyGraph.AddNode(&regionData)
 				case "plan":
 					planData := PlanDataBlock{DataBlock: dataBlock}
 					if err := planData.PreProcessHCLBlock(hclBlock, ctx); err != nil {
 						return nil, err
 					}
-					dGraphNodeCount++
-					planData.GraphID = dGraphNodeCount
-					config.DataBlocks[dataBlock.Type][dataBlock.Name] = &planData
 
+					config.DataBlocks[dataBlock.Type][dataBlock.Name] = &planData
 					dependencyGraph.AddNode(&planData)
 				case "os":
 					osData := OSDataBlock{DataBlock: dataBlock}
 					if err := osData.PreProcessHCLBlock(hclBlock, ctx); err != nil {
 						return nil, err
 					}
-					dGraphNodeCount++
-					osData.GraphID = dGraphNodeCount
-					config.DataBlocks[dataBlock.Type][dataBlock.Name] = &osData
 
+					config.DataBlocks[dataBlock.Type][dataBlock.Name] = &osData
 					dependencyGraph.AddNode(&osData)
 				default:
 					return nil, errors.New("unknown data type " + dataBlock.Type)
@@ -432,6 +461,21 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 	}
 
 	fmt.Println()
+
+	fmt.Println("dependencyGraph.Nodes().Len():", dependencyGraph.Nodes().Len())
+
+	nodes := dependencyGraph.Nodes()
+	for nodes.Next() {
+		node := nodes.Node().(Block)
+		fmt.Println("node:", node.ID(), node)
+	}
+
+	fmt.Println()
+	nodes = dependencyGraph.Nodes()
+	for nodes.Next() {
+		node := nodes.Node().(Block)
+		fmt.Println("node:", node.ID(), node)
+	}
 
 	return &config, nil
 }

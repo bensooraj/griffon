@@ -10,4 +10,5 @@ run:
 		parser.go \
 		parser_body_schema.go \
 		parser_spec.go \
-		utils.go
+		utils.go \
+		graph.go 

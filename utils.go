@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 )
@@ -20,12 +21,12 @@ func ExprAsMap(expr hcl.Expression) (map[string][]string, hcl.Diagnostics) {
 				fmt.Printf("step: %+v\n", step)
 				switch t := step.(type) {
 				case hcl.TraverseAttr:
-					fmt.Println("attr:", t.Name)
+					// fmt.Println("attr:", t.Name)
 					exprMap[traversal.RootName()] = append(exprMap[traversal.RootName()], t.Name)
 				case hcl.TraverseIndex:
-					fmt.Println("index:", t.Key)
+					// fmt.Println("index:", t.Key)
 				case hcl.TraverseRoot:
-					fmt.Println("root:", t.Name)
+					// fmt.Println("root:", t.Name)
 				default:
 					fmt.Println("unknown traversal type", t)
 				}
@@ -34,4 +35,8 @@ func ExprAsMap(expr hcl.Expression) (map[string][]string, hcl.Diagnostics) {
 	}
 	fmt.Println("exprMap:", exprMap)
 	return exprMap, nil
+}
+
+func BuildBlockPath(paths ...string) string {
+	return strings.Join(paths, ".")
 }

@@ -90,6 +90,8 @@ type Block interface {
 	PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error
 	// Process the configuration
 	ProcessConfiguration(ctx *hcl.EvalContext) error
+	// Get Dependencies
+	Dependencies() map[string][]string
 	// Execute the block by making API calls
 	// Execute(ctx *hcl.EvalContext) error
 }
