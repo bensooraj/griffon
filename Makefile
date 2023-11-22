@@ -12,3 +12,6 @@ run:
 		parser_spec.go \
 		utils.go \
 		graph.go 
+
+dot:
+	dot -Tpng graph.dot -o output.png

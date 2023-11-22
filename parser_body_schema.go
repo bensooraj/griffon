@@ -3,9 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"gonum.org/v1/gonum/graph/encoding/dot"
+	"gonum.org/v1/gonum/graph/topo"
 )
 
 // GriffonBlock
@@ -468,15 +471,30 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 	nodes := dependencyGraph.Nodes()
 	for nodes.Next() {
 		node := nodes.Node().(Block)
+		d := node.Dependencies()
+		for _, dep := range d {
+			if dNode := dependencyGraph.Node(blockPathToGraphID[dep]); dNode != nil {
+				dependencyGraph.SetEdge(dependencyGraph.NewEdge(dNode, node))
+			}
+		}
 		fmt.Println("node:", node.ID(), node)
 	}
 
-	fmt.Println()
-	nodes = dependencyGraph.Nodes()
-	for nodes.Next() {
-		node := nodes.Node().(Block)
-		fmt.Println("node:", node.ID(), node)
+	dotByteArr, err := dot.Marshal(dependencyGraph, "dependency_graph.dot", "", "")
+	if err != nil {
+		return nil, err
 	}
+	err = os.WriteFile("graph.dot", dotByteArr, 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println()
+	sDependencyGraph, err := topo.Sort(dependencyGraph)
+	if err != nil {
+		return nil, err
+	}
+	_ = sDependencyGraph
 
 	return &config, nil
 }
