@@ -45,7 +45,7 @@ func (g *GriffonBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
-func (g *GriffonBlock) Dependencies() map[string][]string {
+func (g *GriffonBlock) Dependencies() []string {
 	return nil
 }
 
@@ -61,7 +61,7 @@ func (s *SSHKeyBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext)
 	s.Config = remain
 
 	if attr, ok := content.Attributes["depends_on"]; ok {
-		s.DependsOn, diags = ExprAsMap(attr.Expr)
+		s.DependsOn, diags = ExprAsStringSlice(attr.Expr)
 		if diags.HasErrors() {
 			return diags
 		}
@@ -94,7 +94,7 @@ func (s *SSHKeyBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
-func (s *SSHKeyBlock) Dependencies() map[string][]string {
+func (s *SSHKeyBlock) Dependencies() []string {
 	return s.DependsOn
 }
 
@@ -113,7 +113,7 @@ func (s *StartupScriptBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalC
 	s.Config = remain
 
 	if attr, ok := content.Attributes["depends_on"]; ok {
-		s.DependsOn, diags = ExprAsMap(attr.Expr)
+		s.DependsOn, diags = ExprAsStringSlice(attr.Expr)
 		if diags.HasErrors() {
 			return diags
 		}
@@ -146,7 +146,7 @@ func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
-func (s *StartupScriptBlock) Dependencies() map[string][]string {
+func (s *StartupScriptBlock) Dependencies() []string {
 	return s.DependsOn
 }
 
@@ -163,7 +163,7 @@ func (i *InstanceBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContex
 	i.Config = remain
 
 	if attr, ok := content.Attributes["depends_on"]; ok {
-		i.DependsOn, diags = ExprAsMap(attr.Expr)
+		i.DependsOn, diags = ExprAsStringSlice(attr.Expr)
 		if diags.HasErrors() {
 			return diags
 		}
@@ -212,7 +212,7 @@ func (i *InstanceBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
-func (i *InstanceBlock) Dependencies() map[string][]string {
+func (i *InstanceBlock) Dependencies() []string {
 	return i.DependsOn
 }
 
@@ -227,7 +227,7 @@ func (d *DataBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) e
 		return diags
 	}
 	if attr, ok := content.Attributes["depends_on"]; ok {
-		d.DependsOn, diags = ExprAsMap(attr.Expr)
+		d.DependsOn, diags = ExprAsStringSlice(attr.Expr)
 		if diags.HasErrors() {
 			return diags
 		}
@@ -251,7 +251,7 @@ func (d *DataBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) e
 	return nil
 }
 
-func (d *DataBlock) Dependencies() map[string][]string {
+func (d *DataBlock) Dependencies() []string {
 	return d.DependsOn
 }
 
@@ -463,6 +463,7 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 	fmt.Println()
 
 	fmt.Println("dependencyGraph.Nodes().Len():", dependencyGraph.Nodes().Len())
+	fmt.Println("blockPathToGraphID:", blockPathToGraphID)
 
 	nodes := dependencyGraph.Nodes()
 	for nodes.Next() {

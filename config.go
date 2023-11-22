@@ -21,7 +21,7 @@ type SSHKeyBlock struct {
 	Name      string `hcl:"name,label"`
 	SSHKey    string `hcl:"ssh_key"`
 	Config    hcl.Body
-	DependsOn map[string][]string
+	DependsOn []string
 }
 
 type StartupScriptBlock struct {
@@ -29,7 +29,7 @@ type StartupScriptBlock struct {
 	Name      string `hcl:"name,label"`
 	Script    string `hcl:"script"`
 	Config    hcl.Body
-	DependsOn map[string][]string
+	DependsOn []string
 }
 
 type DataBlock struct {
@@ -37,7 +37,7 @@ type DataBlock struct {
 	Type      string `hcl:"type,label"`
 	Name      string `hcl:"name,label"`
 	Config    hcl.Body
-	DependsOn map[string][]string
+	DependsOn []string
 }
 
 type RegionDataBlock struct {
@@ -81,7 +81,7 @@ type InstanceBlock struct {
 	Hostname        string            `hcl:"hostname,attr"`
 	Tag             map[string]string `hcl:"tag,attr"`
 	Config          hcl.Body
-	DependsOn       map[string][]string
+	DependsOn       []string
 }
 
 type Block interface {
@@ -91,7 +91,7 @@ type Block interface {
 	// Process the configuration
 	ProcessConfiguration(ctx *hcl.EvalContext) error
 	// Get Dependencies
-	Dependencies() map[string][]string
+	Dependencies() []string
 	// Execute the block by making API calls
 	// Execute(ctx *hcl.EvalContext) error
 }

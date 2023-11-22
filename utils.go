@@ -37,6 +37,35 @@ func ExprAsMap(expr hcl.Expression) (map[string][]string, hcl.Diagnostics) {
 	return exprMap, nil
 }
 
+func ExprAsStringSlice(expr hcl.Expression) ([]string, hcl.Diagnostics) {
+	var exprSlice []string
+
+	exprList, diags := hcl.ExprList(expr)
+	if diags.HasErrors() {
+		return nil, diags
+	}
+	for _, v := range exprList {
+		traversals := v.Variables()
+		for _, traversal := range traversals {
+			var paths []string
+			for _, step := range traversal {
+				switch t := step.(type) {
+				case hcl.TraverseRoot:
+					paths = append(paths, t.Name)
+				case hcl.TraverseAttr:
+					paths = append(paths, t.Name)
+				case hcl.TraverseIndex:
+				default:
+					fmt.Println("unknown traversal type", t)
+				}
+			}
+			exprSlice = append(exprSlice, BuildBlockPath(paths...))
+		}
+	}
+	fmt.Println("exprSlice:", exprSlice)
+	return exprSlice, nil
+}
+
 func BuildBlockPath(paths ...string) string {
 	return strings.Join(paths, ".")
 }
