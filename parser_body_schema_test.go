@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 
 	"github.com/bensooraj/griffon/mocks"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stretchr/testify/require"
+	"github.com/vultr/govultr/v3"
 	"go.uber.org/mock/gomock"
 )
 
@@ -89,6 +91,17 @@ func TestAPICall(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockVultr := mocks.NewMockVultrClient(ctrl)
+	mockStartupScriptService := mocks.NewMockStartupScriptService(ctrl)
+	mockStartupScriptService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&govultr.StartupScript{
+		ID:           "cb676a46-66fd-4dfb-b839-443f2e6c0b60",
+		DateCreated:  "2020-10-10T01:56:20+00:00",
+		DateModified: "2020-10-10T01:59:20+00:00",
+		Name:         "my_key",
+		Type:         "pxe",
+		Script:       "ssh-rsa AAAAB3NzaC1yc2E",
+	}, &http.Response{}, nil)
+
+	mockVultr.StartupScript = mockStartupScriptService
 
 	b, err := os.ReadFile("testdata/test1.hcl")
 	if err != nil {

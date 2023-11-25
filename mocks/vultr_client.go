@@ -29,17 +29,5 @@ func NewMockVultrClient(ctrl *gomock.Controller) *govultr.Client {
 
 	vultrClient.OS = NewMockOSService(ctrl)
 
-	mockStartupScriptService := NewMockStartupScriptService(ctrl)
-	mockStartupScriptService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&govultr.StartupScript{
-		ID:           "cb676a46-66fd-4dfb-b839-443f2e6c0b60",
-		DateCreated:  "2020-10-10T01:56:20+00:00",
-		DateModified: "2020-10-10T01:59:20+00:00",
-		Name:         "my_key",
-		Type:         "pxe",
-		Script:       "ssh-rsa AAAAB3NzaC1yc2E",
-	}, &http.Response{}, nil)
-
-	vultrClient.StartupScript = mockStartupScriptService
-
 	return vultrClient
 }
