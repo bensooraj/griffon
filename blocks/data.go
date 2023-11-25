@@ -9,11 +9,11 @@ import (
 )
 
 type DataBlock struct {
-	GraphID   int64
+	GraphID   int64  `json:"graph_id"`
 	Type      string `hcl:"type,label"`
 	Name      string `hcl:"name,label"`
 	Config    hcl.Body
-	DependsOn []string
+	DependsOn []string `json:"depends_on"`
 }
 
 func (d *DataBlock) ID() int64 {
