@@ -1,9 +1,10 @@
-package main
+package blocks
 
 import (
 	"errors"
 	"fmt"
 
+	"github.com/bensooraj/griffon/bodyschema"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/vultr/govultr/v3"
 )
@@ -29,7 +30,7 @@ func (i *InstanceBlock) ID() int64 {
 }
 
 func (i *InstanceBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
-	content, remain, diags := block.Body.PartialContent(DependsOnSchema)
+	content, remain, diags := block.Body.PartialContent(bodyschema.DependsOnSchema)
 	if diags.HasErrors() {
 		return diags
 	}
@@ -45,7 +46,7 @@ func (i *InstanceBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContex
 }
 
 func (i *InstanceBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
-	content, _, diags := i.Config.PartialContent(InstanceBlockSchema)
+	content, _, diags := i.Config.PartialContent(bodyschema.InstanceBlockSchema)
 	switch {
 	case diags.HasErrors():
 		return diags

@@ -1,8 +1,9 @@
-package main
+package blocks
 
 import (
 	"errors"
 
+	"github.com/bensooraj/griffon/bodyschema"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/vultr/govultr/v3"
 )
@@ -21,7 +22,7 @@ func (s *SSHKeyBlock) ID() int64 {
 	return s.GraphID
 }
 func (s *SSHKeyBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
-	content, remain, diags := block.Body.PartialContent(DependsOnSchema)
+	content, remain, diags := block.Body.PartialContent(bodyschema.DependsOnSchema)
 	if diags.HasErrors() {
 		return diags
 	}
@@ -37,7 +38,7 @@ func (s *SSHKeyBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext)
 }
 
 func (s *SSHKeyBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
-	content, _, diags := s.Config.PartialContent(SSHKeyBlockSchema)
+	content, _, diags := s.Config.PartialContent(bodyschema.SSHKeyBlockSchema)
 	switch {
 	case diags.HasErrors():
 		return diags

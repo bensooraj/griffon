@@ -1,8 +1,9 @@
-package main
+package blocks
 
 import (
 	"errors"
 
+	"github.com/bensooraj/griffon/bodyschema"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/vultr/govultr/v3"
 )
@@ -20,7 +21,7 @@ func (g *GriffonBlock) ID() int64 {
 }
 
 func (g *GriffonBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
-	content, diags := block.Body.Content(GriffonBlockSchema)
+	content, diags := block.Body.Content(bodyschema.GriffonBlockSchema)
 	switch {
 	case diags.HasErrors():
 		return diags
