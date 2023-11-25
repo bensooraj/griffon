@@ -1,9 +1,10 @@
-package main
+package blocks
 
 import (
 	"errors"
 	"fmt"
 
+	"github.com/bensooraj/griffon/bodyschema"
 	"github.com/hashicorp/hcl/v2"
 )
 
@@ -20,7 +21,7 @@ func (d *DataBlock) ID() int64 {
 }
 
 func (d *DataBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
-	content, remain, diags := block.Body.PartialContent(DependsOnSchema)
+	content, remain, diags := block.Body.PartialContent(bodyschema.DependsOnSchema)
 	if diags.HasErrors() {
 		return diags
 	}
@@ -31,7 +32,7 @@ func (d *DataBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) e
 		}
 	}
 
-	filterBodyContent, _, diags := remain.PartialContent(DataBlockSchema)
+	filterBodyContent, _, diags := remain.PartialContent(bodyschema.DataBlockSchema)
 	if diags.HasErrors() {
 		return diags
 	}
