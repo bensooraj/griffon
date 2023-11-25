@@ -13,7 +13,7 @@ func main() {
 		panic(err)
 	}
 	// parse the file
-	config, err := ParseHCLUsingBodySchema("testdata/test1.hcl", b, getEvalContext())
+	config, err := ParseHCLUsingBodySchema("testdata/test1.hcl", b, getEvalContext(), nil)
 	if err != nil {
 		panic(err)
 	}

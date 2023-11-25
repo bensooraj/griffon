@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/vultr/govultr/v3"
 )
 
 type GriffonBlock struct {
@@ -11,6 +12,8 @@ type GriffonBlock struct {
 	Region      string `hcl:"region,attr"`
 	VultrAPIKey string `hcl:"vultr_api_key"`
 }
+
+var _ Block = (*GriffonBlock)(nil)
 
 func (g *GriffonBlock) ID() int64 {
 	return g.GraphID
@@ -49,5 +52,9 @@ func (g *GriffonBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 }
 
 func (g *GriffonBlock) Dependencies() []string {
+	return nil
+}
+
+func (g *GriffonBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {
 	return nil
 }

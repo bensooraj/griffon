@@ -7,11 +7,12 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/vultr/govultr/v3"
 	"gonum.org/v1/gonum/graph/encoding/dot"
 	"gonum.org/v1/gonum/graph/topo"
 )
 
-func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) (*Config, error) {
+func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *govultr.Client) (*Config, error) {
 	config := Config{
 		SSHKeys:        make(map[string]SSHKeyBlock),
 		StartupScripts: make(map[string]StartupScriptBlock),
@@ -180,6 +181,14 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext) 
 		return nil, err
 	}
 	_ = sDependencyGraph
+
+	// Test API calls
+	nodes = dependencyGraph.Nodes()
+	for nodes.Next() {
+		node := nodes.Node().(Block)
+		node.Create(ctx, vc)
+		// fmt.Println("node:", node.ID(), node)
+	}
 
 	return &config, nil
 }

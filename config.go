@@ -1,6 +1,9 @@
 package main
 
-import "github.com/hashicorp/hcl/v2"
+import (
+	"github.com/hashicorp/hcl/v2"
+	"github.com/vultr/govultr/v3"
+)
 
 type Config struct {
 	Griffon        GriffonBlock                  `hcl:"griffon,block"`
@@ -20,4 +23,5 @@ type Block interface {
 	Dependencies() []string
 	// Execute the block by making API calls
 	// Execute(ctx *hcl.EvalContext) error
+	Create(ctx *hcl.EvalContext, vc *govultr.Client) error
 }

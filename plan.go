@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/vultr/govultr/v3"
 )
 
 type PlanDataBlock struct {
@@ -19,6 +20,8 @@ type PlanDataBlock struct {
 	Locations   []string `json:"locations"`
 	DataBlock
 }
+
+var _ Block = (*PlanDataBlock)(nil)
 
 func (p *PlanDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	content, diags := p.Config.Content(PlanFilterSchema)
@@ -47,5 +50,9 @@ func (p *PlanDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 		}
 	}
 	fmt.Printf("filter: %+v\n", pf)
+	return nil
+}
+
+func (p *PlanDataBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {
 	return nil
 }

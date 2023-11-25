@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/vultr/govultr/v3"
 )
 
 type SSHKeyBlock struct {
@@ -13,6 +14,8 @@ type SSHKeyBlock struct {
 	Config    hcl.Body
 	DependsOn []string
 }
+
+var _ Block = (*SSHKeyBlock)(nil)
 
 func (s *SSHKeyBlock) ID() int64 {
 	return s.GraphID
@@ -60,4 +63,8 @@ func (s *SSHKeyBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 
 func (s *SSHKeyBlock) Dependencies() []string {
 	return s.DependsOn
+}
+
+func (s *SSHKeyBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {
+	return nil
 }

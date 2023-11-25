@@ -5,8 +5,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/bensooraj/griffon/mocks"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 //nolint:dupl
@@ -69,7 +71,7 @@ func TestBodySchemaParser(t *testing.T) {
 	evalCtx := getEvalContext()
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			config, err := ParseHCLUsingBodySchema("test.hcl", tC.src, evalCtx)
+			config, err := ParseHCLUsingBodySchema("test.hcl", tC.src, evalCtx, nil)
 			if diag, ok := err.(hcl.Diagnostics); ok && diag.HasErrors() {
 				for i, diagErr := range diag.Errs() {
 					t.Log("HCL diagnostic error [", i, "]:", diagErr.Error())
@@ -80,4 +82,22 @@ func TestBodySchemaParser(t *testing.T) {
 			require.Equalf(t, tC.expected.SSHKeys["my_key"], config.SSHKeys["my_key"], "GriffonBlock parsed incorrectly")
 		})
 	}
+}
+
+func TestAPICall(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockVultr := mocks.NewMockVultrClient(ctrl)
+
+	b, err := os.ReadFile("testdata/test1.hcl")
+	if err != nil {
+		panic(err)
+	}
+	// parse the file
+	config, err := ParseHCLUsingBodySchema("testdata/test1.hcl", b, getEvalContext(), mockVultr)
+	if err != nil {
+		panic(err)
+	}
+	_ = config
 }

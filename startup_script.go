@@ -1,18 +1,28 @@
 package main
 
 import (
+	"context"
 	"errors"
+	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/vultr/govultr/v3"
 )
 
 type StartupScriptBlock struct {
-	GraphID   int64
-	Name      string `hcl:"name,label"`
-	Script    string `hcl:"script"`
+	GraphID   int64 `json:"graph_id"`
 	Config    hcl.Body
-	DependsOn []string
+	DependsOn []string `json:"depends_on"`
+	Name      string   `hcl:"name,label" json:"name"`
+	Script    string   `hcl:"script" json:"script"`
+
+	VID           string `json:"id"`
+	VDateCreated  string `json:"date_created"`
+	VDateModified string `json:"date_modified"`
+	VType         string `json:"type"`
 }
+
+var _ Block = (*StartupScriptBlock)(nil)
 
 func (s *StartupScriptBlock) ID() int64 {
 	return s.GraphID
@@ -64,4 +74,22 @@ func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 
 func (s *StartupScriptBlock) Dependencies() []string {
 	return s.DependsOn
+}
+
+func (s *StartupScriptBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {
+	fmt.Println("Creating startup script", s.Name)
+	ss, _, err := vc.StartupScript.Create(context.Background(), &govultr.StartupScriptReq{
+		Name:   s.Name,
+		Script: s.Script,
+	})
+	if err != nil {
+		return err
+	}
+
+	s.VID = ss.ID
+	s.VDateCreated = ss.DateCreated
+	s.VDateModified = ss.DateModified
+	s.VType = ss.Type
+
+	return nil
 }

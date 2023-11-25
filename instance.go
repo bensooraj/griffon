@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/vultr/govultr/v3"
 )
 
 type InstanceBlock struct {
@@ -20,6 +21,8 @@ type InstanceBlock struct {
 	Config          hcl.Body
 	DependsOn       []string
 }
+
+var _ Block = (*InstanceBlock)(nil)
 
 func (i *InstanceBlock) ID() int64 {
 	return i.GraphID
@@ -84,4 +87,8 @@ func (i *InstanceBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 
 func (i *InstanceBlock) Dependencies() []string {
 	return i.DependsOn
+}
+
+func (i *InstanceBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {
+	return nil
 }

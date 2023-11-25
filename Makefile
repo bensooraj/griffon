@@ -2,16 +2,16 @@ lint:
 	go fmt ./...
 	golangci-lint run ./...
 
-run:
-	go run config.go \
-		config_body_schema.go \
-		config_spec.go \
-		main.go \
-		parser.go \
-		parser_body_schema.go \
-		parser_spec.go \
-		utils.go \
-		graph.go 
+run: build
+	./bin/griffon
 
 dot:
 	dot -Tpng graph.dot -o output.png
+
+generate:
+	# https://github.com/uber-go/mock
+	go generate ./...
+
+# command to build this project
+build:
+	go build -o bin/ ./...

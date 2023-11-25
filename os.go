@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/vultr/govultr/v3"
 )
 
 type OSDataBlock struct {
@@ -42,5 +43,9 @@ func (o *OSDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 		}
 	}
 	fmt.Printf("filter: %+v\n", osf)
+	return nil
+}
+
+func (o *OSDataBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {
 	return nil
 }
