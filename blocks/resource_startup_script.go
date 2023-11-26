@@ -11,23 +11,15 @@ import (
 )
 
 type StartupScriptBlock struct {
-	GraphID   int64 `json:"graph_id"`
-	Config    hcl.Body
-	DependsOn []string `json:"depends_on"`
-	Name      string   `hcl:"name,label" json:"name"`
-	Script    string   `hcl:"script" json:"script"`
-
+	Script        string `hcl:"script" json:"script"`
 	VID           string `json:"id"`
 	VDateCreated  string `json:"date_created"`
 	VDateModified string `json:"date_modified"`
 	VType         string `json:"type"`
+	ResourceBlock
 }
 
 var _ Block = (*StartupScriptBlock)(nil)
-
-func (s *StartupScriptBlock) ID() int64 {
-	return s.GraphID
-}
 
 func (s *StartupScriptBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 	content, remain, diags := block.Body.PartialContent(bodyschema.DependsOnSchema)
@@ -71,10 +63,6 @@ func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 		}
 	}
 	return nil
-}
-
-func (s *StartupScriptBlock) Dependencies() []string {
-	return s.DependsOn
 }
 
 func (s *StartupScriptBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {

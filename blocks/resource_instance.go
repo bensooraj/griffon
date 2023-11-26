@@ -10,8 +10,6 @@ import (
 )
 
 type InstanceBlock struct {
-	GraphID         int64
-	Name            string            `hcl:"name,label"`
 	Region          string            `hcl:"region,attr"`
 	Plan            string            `hcl:"plan,attr"`
 	OS              string            `hcl:"os,attr"`
@@ -19,15 +17,10 @@ type InstanceBlock struct {
 	StartupScriptID string            `hcl:"startup_script_id,attr"`
 	Hostname        string            `hcl:"hostname,attr"`
 	Tag             map[string]string `hcl:"tag,attr"`
-	Config          hcl.Body
-	DependsOn       []string
+	ResourceBlock
 }
 
 var _ Block = (*InstanceBlock)(nil)
-
-func (i *InstanceBlock) ID() int64 {
-	return i.GraphID
-}
 
 func (i *InstanceBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 	content, remain, diags := block.Body.PartialContent(bodyschema.DependsOnSchema)
@@ -84,10 +77,6 @@ func (i *InstanceBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	}
 
 	return nil
-}
-
-func (i *InstanceBlock) Dependencies() []string {
-	return i.DependsOn
 }
 
 func (i *InstanceBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {

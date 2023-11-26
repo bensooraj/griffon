@@ -9,18 +9,12 @@ import (
 )
 
 type SSHKeyBlock struct {
-	GraphID   int64
-	Name      string `hcl:"name,label"`
-	SSHKey    string `hcl:"ssh_key"`
-	Config    hcl.Body
-	DependsOn []string
+	SSHKey string `hcl:"ssh_key"`
+	ResourceBlock
 }
 
 var _ Block = (*SSHKeyBlock)(nil)
 
-func (s *SSHKeyBlock) ID() int64 {
-	return s.GraphID
-}
 func (s *SSHKeyBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 	content, remain, diags := block.Body.PartialContent(bodyschema.DependsOnSchema)
 	if diags.HasErrors() {
@@ -60,10 +54,6 @@ func (s *SSHKeyBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 		}
 	}
 	return nil
-}
-
-func (s *SSHKeyBlock) Dependencies() []string {
-	return s.DependsOn
 }
 
 func (s *SSHKeyBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {
