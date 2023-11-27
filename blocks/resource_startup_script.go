@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bensooraj/griffon/bodyschema"
+	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/vultr/govultr/v3"
 )
@@ -22,7 +22,7 @@ type StartupScriptBlock struct {
 var _ Block = (*StartupScriptBlock)(nil)
 
 func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
-	content, _, diags := s.Config.PartialContent(bodyschema.StartupScriptBlockSchema)
+	content, _, diags := s.Config.PartialContent(schema.StartupScriptBlockSchema)
 	switch {
 	case diags.HasErrors():
 		return diags

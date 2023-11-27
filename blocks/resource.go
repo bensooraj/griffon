@@ -1,7 +1,7 @@
 package blocks
 
 import (
-	"github.com/bensooraj/griffon/bodyschema"
+	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
 )
 
@@ -18,7 +18,7 @@ func (r *ResourceBlock) ID() int64 {
 }
 
 func (r *ResourceBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
-	content, remain, diags := block.Body.PartialContent(bodyschema.DependsOnSchema)
+	content, remain, diags := block.Body.PartialContent(schema.DependsOnSchema)
 	if diags.HasErrors() {
 		return diags
 	}

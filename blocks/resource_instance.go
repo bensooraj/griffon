@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/bensooraj/griffon/bodyschema"
+	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/vultr/govultr/v3"
 )
@@ -39,7 +39,7 @@ type InstanceBlock struct {
 var _ Block = (*InstanceBlock)(nil)
 
 func (i *InstanceBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
-	content, _, diags := i.Config.PartialContent(bodyschema.InstanceBlockSchema)
+	content, _, diags := i.Config.PartialContent(schema.InstanceBlockSchema)
 	switch {
 	case diags.HasErrors():
 		return diags

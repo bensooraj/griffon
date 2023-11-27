@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bensooraj/griffon/bodyschema"
+	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/vultr/govultr/v3"
 )
@@ -18,7 +18,7 @@ type OSDataBlock struct {
 }
 
 func (o *OSDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
-	content, diags := o.Config.Content(bodyschema.OSFilterSchema)
+	content, diags := o.Config.Content(schema.OSFilterSchema)
 	switch {
 	case diags.HasErrors():
 		return diags
@@ -26,7 +26,7 @@ func (o *OSDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 		return errors.New("os filter block must have attributes")
 	}
 
-	var osf bodyschema.OSFilterBlock
+	var osf schema.OSFilterBlock
 	for attrName, attr := range content.Attributes {
 		value, diags := attr.Expr.Value(ctx)
 		if diags.HasErrors() {

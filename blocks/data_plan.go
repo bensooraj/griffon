@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bensooraj/griffon/bodyschema"
+	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/vultr/govultr/v3"
 )
@@ -25,7 +25,7 @@ type PlanDataBlock struct {
 var _ Block = (*PlanDataBlock)(nil)
 
 func (p *PlanDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
-	content, diags := p.Config.Content(bodyschema.PlanFilterSchema)
+	content, diags := p.Config.Content(schema.PlanFilterSchema)
 	switch {
 	case diags.HasErrors():
 		return diags
@@ -33,7 +33,7 @@ func (p *PlanDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 		return errors.New("plan filter block must have attributes")
 	}
 
-	var pf bodyschema.PlanFilterBlock
+	var pf schema.PlanFilterBlock
 	for attrName, attr := range content.Attributes {
 		value, diags := attr.Expr.Value(ctx)
 		if diags.HasErrors() {
