@@ -1,7 +1,9 @@
 package blocks
 
 import (
+	"context"
 	"errors"
+	"fmt"
 
 	"github.com/bensooraj/griffon/bodyschema"
 	"github.com/hashicorp/hcl/v2"
@@ -9,7 +11,9 @@ import (
 )
 
 type SSHKeyBlock struct {
-	SSHKey string `hcl:"ssh_key"`
+	SSHKey      string `hcl:"ssh_key" json:"ssh_key"`
+	DateCreated string `json:"date_created"`
+	VID         string `json:"id"`
 	ResourceBlock
 }
 
@@ -57,5 +61,17 @@ func (s *SSHKeyBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 }
 
 func (s *SSHKeyBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {
+	fmt.Println("Creating SSH Key", s.Name)
+	sshKey, _, err := vc.SSHKey.Create(context.Background(), &govultr.SSHKeyReq{
+		Name:   s.Name,
+		SSHKey: s.SSHKey,
+	})
+	if err != nil {
+		return err
+	}
+
+	s.VID = sshKey.ID
+	s.DateCreated = sshKey.DateCreated
+
 	return nil
 }
