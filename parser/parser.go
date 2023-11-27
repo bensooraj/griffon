@@ -1,4 +1,4 @@
-package main
+package parser
 
 import (
 	"os"
@@ -19,7 +19,7 @@ func ParseHCL(filename string, src []byte, ctx *hcl.EvalContext) (*Config, error
 	return &config, nil
 }
 
-func getEvalContext() *hcl.EvalContext {
+func GetEvalContext() *hcl.EvalContext {
 	vars := make(map[string]cty.Value)
 
 	// Region variables

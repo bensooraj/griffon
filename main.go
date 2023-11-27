@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	griffonParser "github.com/bensooraj/griffon/parser"
 )
 
 func main() {
@@ -13,7 +15,7 @@ func main() {
 		panic(err)
 	}
 	// parse the file
-	config, err := ParseHCLUsingBodySchema("testdata/test1.hcl", b, getEvalContext(), nil)
+	config, err := griffonParser.ParseHCLUsingBodySchema("testdata/test1.hcl", b, griffonParser.GetEvalContext(), nil)
 	if err != nil {
 		panic(err)
 	}

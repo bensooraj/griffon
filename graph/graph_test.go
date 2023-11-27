@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/bensooraj/griffon/blocks"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/topo"
 )
@@ -14,13 +15,13 @@ func TestNewGraph(t *testing.T) {
 		t.Error("NewGraph() returned nil")
 	}
 
-	r1, r2 := &RegionDataBlock{}, &RegionDataBlock{}
+	r1, r2 := &blocks.RegionDataBlock{}, &blocks.RegionDataBlock{}
 	r1.GraphID = 1
 	r2.GraphID = 2
-	p3, p4 := &PlanDataBlock{}, &PlanDataBlock{}
+	p3, p4 := &blocks.PlanDataBlock{}, &blocks.PlanDataBlock{}
 	p3.GraphID = 3
 	p4.GraphID = 4
-	o5, o6 := &OSDataBlock{}, &OSDataBlock{}
+	o5, o6 := &blocks.OSDataBlock{}, &blocks.OSDataBlock{}
 	o5.GraphID = 5
 	o6.GraphID = 6
 
@@ -48,12 +49,12 @@ func TestNewGraph(t *testing.T) {
 
 	for _, n := range sortedNodes {
 		switch n := n.(type) {
-		case *RegionDataBlock:
-			t.Log("RegionDataBlock", n.GraphID)
-		case *PlanDataBlock:
-			t.Log("PlanDataBlock", n.GraphID)
-		case *OSDataBlock:
-			t.Log("OSDataBlock", n.GraphID)
+		case *blocks.RegionDataBlock:
+			t.Log("blocks.RegionDataBlock", n.GraphID)
+		case *blocks.PlanDataBlock:
+			t.Log("blocks.PlanDataBlock", n.GraphID)
+		case *blocks.OSDataBlock:
+			t.Log("blocks.OSDataBlock", n.GraphID)
 		}
 	}
 }
