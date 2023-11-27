@@ -1,8 +1,10 @@
 package blocks
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/bensooraj/griffon/bodyschema"
 	"github.com/hashicorp/hcl/v2"
@@ -10,13 +12,27 @@ import (
 )
 
 type InstanceBlock struct {
-	Region          string            `hcl:"region,attr"`
-	Plan            string            `hcl:"plan,attr"`
-	OS              string            `hcl:"os,attr"`
-	SshKeyID        string            `hcl:"ssh_key_id,attr"`
-	StartupScriptID string            `hcl:"startup_script_id,attr"`
-	Hostname        string            `hcl:"hostname,attr"`
-	Tag             map[string]string `hcl:"tag,attr"`
+	Region          string   `hcl:"region,attr" json:"region,omitempty"`
+	Plan            string   `hcl:"plan,attr" json:"plan,omitempty"`
+	OsID            int      `hcl:"os_id,attr" json:"os_id,omitempty"`
+	SshKeyID        string   `hcl:"ssh_key_id,attr" json:"sshkey_id,omitempty"`
+	StartupScriptID string   `hcl:"script_id,attr" json:"script_id,omitempty"`
+	Hostname        string   `hcl:"hostname,attr" json:"hostname"`
+	Tags            []string `hcl:"tag,attr" json:"tags"`
+
+	VID             string `json:"id"`
+	Os              string `json:"os"`
+	RAM             int    `json:"ram"`
+	Disk            int    `json:"disk"`
+	MainIP          string `json:"main_ip"`
+	VCPUCount       int    `json:"vcpu_count"`
+	DefaultPassword string `json:"default_password,omitempty"`
+	DateCreated     string `json:"date_created"`
+	Status          string `json:"status"`
+	PowerStatus     string `json:"power_status"`
+	ServerStatus    string `json:"server_status"`
+	InternalIP      string `json:"internal_ip"`
+
 	ResourceBlock
 }
 
@@ -59,7 +75,11 @@ func (i *InstanceBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 		case "plan":
 			i.Plan = value.AsString()
 		case "os":
-			i.OS = value.AsString()
+			osID, err := strconv.Atoi(value.AsString())
+			if err != nil {
+				return err
+			}
+			i.OsID = osID
 		case "ssh_key_id":
 			i.SshKeyID = value.AsString()
 		case "startup_script_id":
@@ -67,11 +87,9 @@ func (i *InstanceBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 		case "hostname":
 			i.Hostname = value.AsString()
 		case "tag":
-			i.Tag = make(map[string]string)
-
-			fmt.Println("tag:", value.AsString(), value.AsValueMap())
+			fmt.Println("tags:", value.AsString(), value.AsValueMap())
 			for key, ctyVal := range value.AsValueMap() {
-				i.Tag[key] = ctyVal.AsString()
+				i.Tags = append(i.Tags, fmt.Sprintf("%s=%s", key, ctyVal.AsString()))
 			}
 		}
 	}
@@ -80,5 +98,32 @@ func (i *InstanceBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 }
 
 func (i *InstanceBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {
+	fmt.Println("Creating instance", i.Name)
+	ins, _, err := vc.Instance.Create(context.Background(), &govultr.InstanceCreateReq{
+		Region:   i.Region,
+		Plan:     i.Plan,
+		OsID:     i.OsID,
+		SSHKeys:  []string{i.SshKeyID},
+		ScriptID: i.StartupScriptID,
+		Hostname: i.Hostname,
+		Tags:     i.Tags,
+	})
+	if err != nil {
+		return err
+	}
+
+	i.VID = ins.ID
+	i.Os = ins.Os
+	i.RAM = ins.RAM
+	i.Disk = ins.Disk
+	i.MainIP = ins.MainIP
+	i.VCPUCount = ins.VCPUCount
+	i.DefaultPassword = ins.DefaultPassword
+	i.DateCreated = ins.DateCreated
+	i.Status = ins.Status
+	i.PowerStatus = ins.PowerStatus
+	i.ServerStatus = ins.ServerStatus
+	i.InternalIP = ins.InternalIP
+
 	return nil
 }
