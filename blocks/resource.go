@@ -1,6 +1,9 @@
 package blocks
 
-import "github.com/hashicorp/hcl/v2"
+import (
+	"github.com/bensooraj/griffon/bodyschema"
+	"github.com/hashicorp/hcl/v2"
+)
 
 type ResourceBlock struct {
 	GraphID   int64  `json:"graph_id"`
@@ -12,6 +15,22 @@ type ResourceBlock struct {
 
 func (r *ResourceBlock) ID() int64 {
 	return r.GraphID
+}
+
+func (r *ResourceBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
+	content, remain, diags := block.Body.PartialContent(bodyschema.DependsOnSchema)
+	if diags.HasErrors() {
+		return diags
+	}
+	r.Config = remain
+
+	if attr, ok := content.Attributes["depends_on"]; ok {
+		r.DependsOn, diags = ExprAsStringSlice(attr.Expr)
+		if diags.HasErrors() {
+			return diags
+		}
+	}
+	return nil
 }
 
 func (r *ResourceBlock) Dependencies() []string {

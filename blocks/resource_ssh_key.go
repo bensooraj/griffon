@@ -19,22 +19,6 @@ type SSHKeyBlock struct {
 
 var _ Block = (*SSHKeyBlock)(nil)
 
-func (s *SSHKeyBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
-	content, remain, diags := block.Body.PartialContent(bodyschema.DependsOnSchema)
-	if diags.HasErrors() {
-		return diags
-	}
-	s.Config = remain
-
-	if attr, ok := content.Attributes["depends_on"]; ok {
-		s.DependsOn, diags = ExprAsStringSlice(attr.Expr)
-		if diags.HasErrors() {
-			return diags
-		}
-	}
-	return nil
-}
-
 func (s *SSHKeyBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	content, _, diags := s.Config.PartialContent(bodyschema.SSHKeyBlockSchema)
 	switch {

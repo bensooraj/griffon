@@ -38,22 +38,6 @@ type InstanceBlock struct {
 
 var _ Block = (*InstanceBlock)(nil)
 
-func (i *InstanceBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
-	content, remain, diags := block.Body.PartialContent(bodyschema.DependsOnSchema)
-	if diags.HasErrors() {
-		return diags
-	}
-	i.Config = remain
-
-	if attr, ok := content.Attributes["depends_on"]; ok {
-		i.DependsOn, diags = ExprAsStringSlice(attr.Expr)
-		if diags.HasErrors() {
-			return diags
-		}
-	}
-	return nil
-}
-
 func (i *InstanceBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	content, _, diags := i.Config.PartialContent(bodyschema.InstanceBlockSchema)
 	switch {

@@ -21,25 +21,6 @@ type StartupScriptBlock struct {
 
 var _ Block = (*StartupScriptBlock)(nil)
 
-func (s *StartupScriptBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
-	content, remain, diags := block.Body.PartialContent(bodyschema.DependsOnSchema)
-	switch {
-	case diags.HasErrors():
-		return diags
-	case len(content.Attributes) == 0:
-		return errors.New("startup_script block must have attributes")
-	}
-	s.Config = remain
-
-	if attr, ok := content.Attributes["depends_on"]; ok {
-		s.DependsOn, diags = ExprAsStringSlice(attr.Expr)
-		if diags.HasErrors() {
-			return diags
-		}
-	}
-	return nil
-}
-
 func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	content, _, diags := s.Config.PartialContent(bodyschema.StartupScriptBlockSchema)
 	switch {
