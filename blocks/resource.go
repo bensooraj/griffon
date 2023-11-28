@@ -6,15 +6,23 @@ import (
 )
 
 type ResourceBlock struct {
-	GraphID   int64  `json:"graph_id"`
-	Type      string `hcl:"type,label" json:"type"`
-	Name      string `hcl:"name,label" json:"name"`
+	GraphID   int64     `json:"graph_id"`
+	Type      BlockType `hcl:"type,label" json:"type"`
+	Name      string    `hcl:"name,label" json:"name"`
 	Config    hcl.Body
 	DependsOn []string `json:"depends_on"`
 }
 
 func (r *ResourceBlock) ID() int64 {
 	return r.GraphID
+}
+
+func (r *ResourceBlock) BlockType() BlockType {
+	return r.Type
+}
+
+func (r *ResourceBlock) BlockName() string {
+	return r.Name
 }
 
 func (r *ResourceBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {

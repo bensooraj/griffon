@@ -5,7 +5,6 @@ go 1.21.3
 require (
 	github.com/hashicorp/hcl/v2 v2.19.1
 	github.com/stretchr/testify v1.2.2
-	github.com/vultr/govultr v1.1.1
 	github.com/vultr/govultr/v3 v3.4.1
 	github.com/zclconf/go-cty v1.13.0
 	go.uber.org/mock v0.3.0

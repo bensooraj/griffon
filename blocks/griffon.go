@@ -20,6 +20,14 @@ func (g *GriffonBlock) ID() int64 {
 	return g.GraphID
 }
 
+func (g *GriffonBlock) BlockType() BlockType {
+	return GriffonBlockType
+}
+
+func (g *GriffonBlock) BlockName() string {
+	return "griffon"
+}
+
 func (g *GriffonBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
 	content, diags := block.Body.Content(schema.GriffonBlockSchema)
 	switch {

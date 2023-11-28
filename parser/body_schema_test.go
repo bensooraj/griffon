@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/bensooraj/griffon/blocks"
 	"github.com/bensooraj/griffon/mocks"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stretchr/testify/require"
@@ -32,7 +33,7 @@ func TestBodySchemaParser(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		src      []byte
-		expected Config
+		expected blocks.Config
 	}{
 		{
 			desc: "simple config",
@@ -44,10 +45,18 @@ func TestBodySchemaParser(t *testing.T) {
 			ssh_key "my_key" {
 				ssh_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADA"
 			}`),
-			expected: Config{
-				Griffon: GriffonBlock{Region: "nyc1", VultrAPIKey: "1234567890"},
-				SSHKeys: map[string]SSHKeyBlock{
-					"my_key": {Name: "my_key", SSHKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADA"},
+			expected: blocks.Config{
+				Griffon: blocks.GriffonBlock{Region: "nyc1", VultrAPIKey: "1234567890"},
+				Resources: map[blocks.BlockType]map[string]blocks.Block{
+					blocks.SSHKeyBlockType: {
+						"my_key": &blocks.SSHKeyBlock{
+							ResourceBlock: blocks.ResourceBlock{
+								Name: "my_key",
+								Type: "ssh_key",
+							},
+							SSHKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADA",
+						},
+					},
 				},
 			},
 		},
@@ -61,16 +70,24 @@ func TestBodySchemaParser(t *testing.T) {
 			ssh_key "my_key" {
 				ssh_key = file("%s")
 			}`, myKeyPubFile.Name())),
-			expected: Config{
-				Griffon: GriffonBlock{Region: "AMS", VultrAPIKey: "axdfcdasdfzzxserdfwsd"},
-				SSHKeys: map[string]SSHKeyBlock{
-					"my_key": {Name: "my_key", SSHKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADA"},
+			expected: blocks.Config{
+				Griffon: blocks.GriffonBlock{Region: "AMS", VultrAPIKey: "axdfcdasdfzzxserdfwsd"},
+				Resources: map[blocks.BlockType]map[string]blocks.Block{
+					blocks.SSHKeyBlockType: {
+						"my_key": &blocks.SSHKeyBlock{
+							ResourceBlock: blocks.ResourceBlock{
+								Name: "my_key",
+								Type: "ssh_key",
+							},
+							SSHKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADA",
+						},
+					},
 				},
 			},
 		},
 	}
 
-	evalCtx := getEvalContext()
+	evalCtx := GetEvalContext()
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			config, err := ParseHCLUsingBodySchema("test.hcl", tC.src, evalCtx, nil)
@@ -81,7 +98,12 @@ func TestBodySchemaParser(t *testing.T) {
 			}
 			require.NoError(t, err)
 			require.Equalf(t, tC.expected.Griffon, config.Griffon, "GriffonBlock parsed incorrectly")
-			require.Equalf(t, tC.expected.SSHKeys["my_key"], config.SSHKeys["my_key"], "GriffonBlock parsed incorrectly")
+			require.Equalf(
+				t,
+				tC.expected.Resources[blocks.SSHKeyBlockType]["my_key"],
+				config.Resources[blocks.SSHKeyBlockType]["my_key"],
+				"GriffonBlock parsed incorrectly",
+			)
 		})
 	}
 }
@@ -108,7 +130,7 @@ func TestAPICall(t *testing.T) {
 		panic(err)
 	}
 	// parse the file
-	config, err := ParseHCLUsingBodySchema("testdata/test1.hcl", b, getEvalContext(), mockVultr)
+	config, err := ParseHCLUsingBodySchema("testdata/test1.hcl", b, GetEvalContext(), mockVultr)
 	if err != nil {
 		panic(err)
 	}

@@ -7,6 +7,8 @@ import (
 
 type Block interface {
 	ID() int64
+	BlockType() BlockType
+	BlockName() string
 	// Separate the block into its configuration and dependencies
 	PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error
 	// Process the configuration

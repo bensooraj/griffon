@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/bensooraj/griffon/blocks"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsimple"
 	"github.com/zclconf/go-cty/cty"
@@ -11,8 +12,8 @@ import (
 	"github.com/zclconf/go-cty/cty/function/stdlib"
 )
 
-func ParseHCL(filename string, src []byte, ctx *hcl.EvalContext) (*Config, error) {
-	config := Config{}
+func ParseHCL(filename string, src []byte, ctx *hcl.EvalContext) (*blocks.Config, error) {
+	config := blocks.Config{}
 	if err := hclsimple.Decode(filename, src, ctx, &config); err != nil {
 		return nil, err
 	}

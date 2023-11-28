@@ -9,15 +9,22 @@ import (
 )
 
 type DataBlock struct {
-	GraphID   int64  `json:"graph_id"`
-	Type      string `hcl:"type,label"`
-	Name      string `hcl:"name,label"`
+	GraphID   int64     `json:"graph_id"`
+	Type      BlockType `hcl:"type,label"`
+	Name      string    `hcl:"name,label"`
 	Config    hcl.Body
 	DependsOn []string `json:"depends_on"`
 }
 
 func (d *DataBlock) ID() int64 {
 	return d.GraphID
+}
+
+func (d *DataBlock) BlockType() BlockType {
+	return d.Type
+}
+func (d *DataBlock) BlockName() string {
+	return d.Name
 }
 
 func (d *DataBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error {
@@ -45,7 +52,7 @@ func (d *DataBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) e
 		}
 		d.Config = filterBodyContent.Blocks[0].Body
 	default:
-		return errors.New("unknown data type " + d.Type + " with name " + d.Name)
+		return errors.New("unknown data type " + string(d.Type) + " with name " + d.Name)
 	}
 	return nil
 }
