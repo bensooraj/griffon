@@ -90,7 +90,7 @@ func TestBodySchemaParser(t *testing.T) {
 	evalCtx := GetEvalContext()
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			config, err := ParseHCLUsingBodySchema("test.hcl", tC.src, evalCtx, nil)
+			config, err := ParseWithBodySchema("test.hcl", tC.src, evalCtx, nil)
 			if diag, ok := err.(hcl.Diagnostics); ok && diag.HasErrors() {
 				for i, diagErr := range diag.Errs() {
 					t.Log("HCL diagnostic error [", i, "]:", diagErr.Error())
@@ -109,6 +109,12 @@ func TestBodySchemaParser(t *testing.T) {
 }
 
 func TestAPICall(t *testing.T) {
+	t.Setenv("VULTR_API_KEY", "AxDfCdASdFzzxserDFWSD")
+
+	defer t.Cleanup(func() {
+		t.Setenv("VULTR_API_KEY", "")
+	})
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -125,14 +131,19 @@ func TestAPICall(t *testing.T) {
 
 	mockVultr.StartupScript = mockStartupScriptService
 
-	b, err := os.ReadFile("testdata/test1.hcl")
+	b, err := os.ReadFile("../testdata/test_1.hcl")
 	if err != nil {
 		panic(err)
 	}
 	// parse the file
-	config, err := ParseHCLUsingBodySchema("testdata/test1.hcl", b, GetEvalContext(), mockVultr)
-	if err != nil {
-		panic(err)
-	}
-	_ = config
+	config, err := ParseWithBodySchema("testdata/test1.hcl", b, GetEvalContext(), mockVultr)
+	require.NoError(t, err)
+
+	// check if the parsed config is correct
+	require.Equalf(
+		t,
+		blocks.GriffonBlock{Region: "us-east-1", VultrAPIKey: "AxDfCdASdFzzxserDFWSD"},
+		config.Griffon,
+		"GriffonBlock parsed incorrectly",
+	)
 }

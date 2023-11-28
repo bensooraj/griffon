@@ -15,7 +15,7 @@ import (
 	"gonum.org/v1/gonum/graph/topo"
 )
 
-func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *govultr.Client) (*blocks.Config, error) {
+func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *govultr.Client) (*blocks.Config, error) {
 	config := blocks.Config{
 		Griffon:   blocks.GriffonBlock{},
 		Data:      make(map[blocks.BlockType]map[string]blocks.Block),
@@ -184,7 +184,10 @@ func ParseHCLUsingBodySchema(filename string, src []byte, ctx *hcl.EvalContext, 
 	nodes = dependencyGraph.Nodes()
 	for nodes.Next() {
 		node := nodes.Node().(blocks.Block)
-		node.Create(ctx, vc)
+		err := node.Create(ctx, vc)
+		if err != nil {
+			fmt.Println("Error creating node:", err)
+		}
 		// fmt.Println("node:", node.ID(), node)
 	}
 

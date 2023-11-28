@@ -109,5 +109,8 @@ func (i *InstanceBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {
 	i.ServerStatus = ins.ServerStatus
 	i.InternalIP = ins.InternalIP
 
+	fmt.Println("Created instance", i.Name, i.VID)
+	fmt.Printf("Created instance %+v\n", ins)
+
 	return nil
 }

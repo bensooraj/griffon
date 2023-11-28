@@ -15,7 +15,7 @@ func main() {
 		panic(err)
 	}
 	// parse the file
-	config, err := griffonParser.ParseHCLUsingBodySchema("testdata/test1.hcl", b, griffonParser.GetEvalContext(), nil)
+	config, err := griffonParser.ParseWithBodySchema("testdata/test1.hcl", b, griffonParser.GetEvalContext(), nil)
 	if err != nil {
 		panic(err)
 	}

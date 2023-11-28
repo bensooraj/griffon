@@ -1,6 +1,6 @@
 griffon {
     region = "us-east-1"
-    vultr_api_key = "VULTR_API_KEY"
+    vultr_api_key = env.VULTR_API_KEY
 }
 
 data "region" "current" {}
