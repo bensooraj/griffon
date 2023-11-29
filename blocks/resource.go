@@ -38,6 +38,9 @@ func (r *ResourceBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContex
 			return diags
 		}
 	}
+
+	r.Type = BlockType(block.Type)
+
 	return nil
 }
 

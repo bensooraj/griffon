@@ -146,4 +146,9 @@ func TestAPICall(t *testing.T) {
 		config.Griffon,
 		"GriffonBlock parsed incorrectly",
 	)
+
+	t.Logf("config.Resources: %+v", config.Resources)
+	expectedSSHKeyBlock := blocks.SSHKeyBlock{SSHKey: "ssh-rsa AAAAB3NzaC1yc2E", ResourceBlock: blocks.ResourceBlock{Name: "my_key", Type: "ssh_key"}}
+	require.Equalf(t, expectedSSHKeyBlock, config.Resources[blocks.SSHKeyBlockType]["my_key"], "SSHKeyBlock parsed incorrectly")
+
 }
