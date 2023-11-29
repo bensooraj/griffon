@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewGraph(t *testing.T) {
-	g := NewGraph()
+	g := NewDependencyGraph()
 	if g == nil {
 		t.Error("NewGraph() returned nil")
 	}

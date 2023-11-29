@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/vultr/govultr/v3"
 	"gonum.org/v1/gonum/graph/encoding/dot"
-	"gonum.org/v1/gonum/graph/topo"
 )
 
 func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *govultr.Client) (*blocks.Config, error) {
@@ -36,9 +35,6 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 		return nil, errors.New("no blocks found")
 	}
 
-	blockPathToGraphID := make(map[string]int64)
-
-	dependencyGraph := graph.NewGraph()
 	var dGraphNodeCount int64 = 0
 
 	hclBlocks := bodyContent.Blocks.ByType()
@@ -55,9 +51,6 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 			}
 			griffon.GraphID = 0
 			config.Griffon = griffon
-			blockPathToGraphID[blockName] = griffon.GraphID
-
-			dependencyGraph.AddNode(&griffon)
 		case "ssh_key":
 			for _, hclBlock := range hclBlocks {
 				var sshKey blocks.SSHKeyBlock
@@ -68,10 +61,8 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 				}
 				dGraphNodeCount++
 				sshKey.GraphID = dGraphNodeCount
-				blockPathToGraphID[blocks.BuildBlockPath(blockName, sshKey.Name)] = sshKey.GraphID
 
 				config.AddResource(&sshKey)
-				dependencyGraph.AddNode(&sshKey)
 			}
 		case "startup_script":
 			for _, hclBlock := range hclBlocks {
@@ -83,10 +74,8 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 				}
 				dGraphNodeCount++
 				startupScript.GraphID = dGraphNodeCount
-				blockPathToGraphID[blocks.BuildBlockPath(blockName, startupScript.Name)] = startupScript.GraphID
 
 				config.AddResource(&startupScript)
-				dependencyGraph.AddNode(&startupScript)
 			}
 		case "instance":
 			for _, hclBlock := range hclBlocks {
@@ -98,10 +87,8 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 				}
 				dGraphNodeCount++
 				instance.GraphID = dGraphNodeCount
-				blockPathToGraphID[blocks.BuildBlockPath(blockName, instance.Name)] = instance.GraphID
 
 				config.AddResource(&instance)
-				dependencyGraph.AddNode(&instance)
 			}
 		case "data":
 			for _, hclBlock := range hclBlocks {
@@ -111,7 +98,6 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 					Name:    hclBlock.Labels[1],
 					GraphID: dGraphNodeCount,
 				}
-				blockPathToGraphID[blocks.BuildBlockPath(blockName, string(dataBlock.Type), dataBlock.Name)] = dataBlock.GraphID
 
 				switch dataBlock.Type {
 				case "region":
@@ -120,24 +106,21 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 						return nil, err
 					}
 
-					config.AddResource(&regionData)
-					dependencyGraph.AddNode(&regionData)
+					config.AddData(&regionData)
 				case "plan":
 					planData := blocks.PlanDataBlock{DataBlock: dataBlock}
 					if err := planData.PreProcessHCLBlock(hclBlock, ctx); err != nil {
 						return nil, err
 					}
 
-					config.AddResource(&planData)
-					dependencyGraph.AddNode(&planData)
+					config.AddData(&planData)
 				case "os":
 					osData := blocks.OSDataBlock{DataBlock: dataBlock}
 					if err := osData.PreProcessHCLBlock(hclBlock, ctx); err != nil {
 						return nil, err
 					}
 
-					config.AddResource(&osData)
-					dependencyGraph.AddNode(&osData)
+					config.AddData(&osData)
 				default:
 					return nil, errors.New("unknown data type " + string(dataBlock.Type))
 				}
@@ -146,50 +129,34 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 			fmt.Println("unknown block type", blockName)
 		}
 	}
-
 	fmt.Println()
-
-	fmt.Println("dependencyGraph.Nodes().Len():", dependencyGraph.Nodes().Len())
-	fmt.Println("blockPathToGraphID:", blockPathToGraphID)
-
-	nodes := dependencyGraph.Nodes()
-	for nodes.Next() {
-		node := nodes.Node().(blocks.Block)
-		d := node.Dependencies()
-		for _, dep := range d {
-			if dNode := dependencyGraph.Node(blockPathToGraphID[dep]); dNode != nil {
-				dependencyGraph.SetEdge(dependencyGraph.NewEdge(dNode, node))
-			}
-		}
-		fmt.Println("node:", node.ID(), node)
-	}
-
-	dotByteArr, err := dot.Marshal(dependencyGraph, "dependency_graph.dot", "", "")
-	if err != nil {
-		return nil, err
-	}
-	err = os.WriteFile("graph.dot", dotByteArr, 0644)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Println()
-	sDependencyGraph, err := topo.Sort(dependencyGraph)
-	if err != nil {
-		return nil, err
-	}
-	_ = sDependencyGraph
-
-	// Test API calls
-	nodes = dependencyGraph.Nodes()
-	for nodes.Next() {
-		node := nodes.Node().(blocks.Block)
-		err := node.Create(ctx, vc)
-		if err != nil {
-			fmt.Println("Error creating node:", err)
-		}
-		// fmt.Println("node:", node.ID(), node)
-	}
-
 	return &config, nil
+}
+
+func CalculateEvaluationOrder(config *blocks.Config) (*graph.DependencyGraph, error) {
+	dependencyGraph := graph.NewDependencyGraph()
+
+	err := dependencyGraph.LoadGriffonConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	sortedNodeIDs, err := dependencyGraph.GetSortedNodeIDs()
+	if err != nil {
+		return nil, err
+	}
+	config.EvaluationOrder = sortedNodeIDs
+
+	if os.Getenv("GENERATE_DOT_FILE") == "true" {
+		dotByteArr, err := dot.Marshal(dependencyGraph, "dependency_graph.dot", "", "")
+		if err != nil {
+			return nil, err
+		}
+		err = os.WriteFile("dependency_graph.dot", dotByteArr, 0644)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return dependencyGraph, nil
 }

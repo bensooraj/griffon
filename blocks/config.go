@@ -17,9 +17,10 @@ const (
 )
 
 type Config struct {
-	Griffon   GriffonBlock                   `hcl:"griffon,block" json:"griffon"`
-	Data      map[BlockType]map[string]Block `hcl:"data,block" json:"data"`
-	Resources map[BlockType]map[string]Block `hcl:"resources,block" json:"resources"`
+	EvaluationOrder []int64                        `json:"evaluation_order,omitempty"`
+	Griffon         GriffonBlock                   `hcl:"griffon,block" json:"griffon"`
+	Data            map[BlockType]map[string]Block `hcl:"data,block" json:"data"`
+	Resources       map[BlockType]map[string]Block `hcl:"resources,block" json:"resources"`
 }
 
 func (c *Config) AddResource(b Block) {
@@ -27,4 +28,11 @@ func (c *Config) AddResource(b Block) {
 		c.Resources[b.BlockType()] = make(map[string]Block)
 	}
 	c.Resources[b.BlockType()][b.BlockName()] = b
+}
+
+func (c *Config) AddData(b Block) {
+	if _, ok := c.Data[b.BlockType()]; !ok {
+		c.Data[b.BlockType()] = make(map[string]Block)
+	}
+	c.Data[b.BlockType()][b.BlockName()] = b
 }
