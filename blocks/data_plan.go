@@ -1,6 +1,7 @@
 package blocks
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -54,6 +55,16 @@ func (p *PlanDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
-func (p *PlanDataBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {
+// Get
+func (p *PlanDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
+	plans, meta, _, err := vc.Plan.List(context.Background(), "planType string", &govultr.ListOptions{})
+	if err != nil {
+		return err
+	}
+	fmt.Println("PlanDataBlock::Get::meta:", meta)
+
+	for _, plan := range plans {
+		fmt.Printf("plan: %+v\n", plan)
+	}
 	return nil
 }

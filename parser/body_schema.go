@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -130,6 +131,12 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 		}
 	}
 	fmt.Println()
+
+	err := EvaluateConfig(&config, vc)
+	if err != nil {
+		fmt.Println("Error evaluating config:", err)
+	}
+
 	return &config, nil
 }
 
@@ -159,4 +166,42 @@ func CalculateEvaluationOrder(config *blocks.Config) (*graph.DependencyGraph, er
 	}
 
 	return dependencyGraph, nil
+}
+
+func EvaluateConfig(config *blocks.Config, vc *govultr.Client) error {
+	dependencyGraph, err := CalculateEvaluationOrder(config)
+	if err != nil {
+		return err
+	}
+
+	evalCtx := GetEvalContext()
+
+	for _, nodeID := range config.EvaluationOrder {
+		node := dependencyGraph.Node(nodeID).(blocks.Block)
+
+		// Process the block using the evaluation context
+		node.ProcessConfiguration(evalCtx)
+
+		switch b := node.(type) {
+		case *blocks.GriffonBlock:
+			fmt.Println("GriffonBlock:", b.BlockType(), b.BlockName())
+		case *blocks.RegionDataBlock,
+			*blocks.OSDataBlock,
+			*blocks.PlanDataBlock:
+			fmt.Println("Data:", b.BlockType(), b.BlockName())
+
+		case *blocks.SSHKeyBlock,
+			*blocks.StartupScriptBlock,
+			*blocks.InstanceBlock:
+			fmt.Println("Resource:", b.BlockType(), b.BlockName())
+			err := b.Create(context.Background(), evalCtx, vc)
+			if err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unknown block type %T", node)
+		}
+	}
+
+	return nil
 }

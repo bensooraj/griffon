@@ -1,6 +1,8 @@
 package blocks
 
 import (
+	"context"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/vultr/govultr/v3"
 )
@@ -10,12 +12,13 @@ type Block interface {
 	BlockType() BlockType
 	BlockName() string
 	// Separate the block into its configuration and dependencies
-	PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) error
+	PreProcessHCLBlock(block *hcl.Block, evalCtx *hcl.EvalContext) error
 	// Process the configuration
-	ProcessConfiguration(ctx *hcl.EvalContext) error
+	ProcessConfiguration(evalCtx *hcl.EvalContext) error
 	// Get Dependencies
 	Dependencies() []string
-	// Execute the block by making API calls
-	// Execute(ctx *hcl.EvalContext) error
-	Create(ctx *hcl.EvalContext, vc *govultr.Client) error
+	// Get the data block
+	Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error
+	// Create the block by making API calls
+	Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error
 }

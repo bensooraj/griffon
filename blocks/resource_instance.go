@@ -81,9 +81,9 @@ func (i *InstanceBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
-func (i *InstanceBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {
+func (i *InstanceBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
 	fmt.Println("Creating instance", i.Name)
-	ins, _, err := vc.Instance.Create(context.Background(), &govultr.InstanceCreateReq{
+	ins, _, err := vc.Instance.Create(ctx, &govultr.InstanceCreateReq{
 		Region:   i.Region,
 		Plan:     i.Plan,
 		OsID:     i.OsID,

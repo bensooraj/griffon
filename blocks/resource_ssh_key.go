@@ -44,7 +44,7 @@ func (s *SSHKeyBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
-func (s *SSHKeyBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {
+func (s *SSHKeyBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
 	fmt.Println("Creating SSH Key", s.Name)
 	sshKey, _, err := vc.SSHKey.Create(context.Background(), &govultr.SSHKeyReq{
 		Name:   s.Name,

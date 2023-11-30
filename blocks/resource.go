@@ -1,8 +1,11 @@
 package blocks
 
 import (
+	"context"
+
 	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/vultr/govultr/v3"
 )
 
 type ResourceBlock struct {
@@ -46,4 +49,9 @@ func (r *ResourceBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContex
 
 func (r *ResourceBlock) Dependencies() []string {
 	return r.DependsOn
+}
+
+// Implement Get
+func (r *ResourceBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
+	return nil
 }

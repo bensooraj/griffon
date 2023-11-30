@@ -1,11 +1,13 @@
 package blocks
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/vultr/govultr/v3"
 )
 
 type DataBlock struct {
@@ -59,4 +61,8 @@ func (d *DataBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) e
 
 func (d *DataBlock) Dependencies() []string {
 	return d.DependsOn
+}
+
+func (p *DataBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
+	return nil
 }

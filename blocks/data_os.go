@@ -1,6 +1,7 @@
 package blocks
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -16,6 +17,8 @@ type OSDataBlock struct {
 	Family  string `json:"family"`
 	DataBlock
 }
+
+var _ Block = (*OSDataBlock)(nil)
 
 func (o *OSDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	content, diags := o.Config.Content(schema.OSFilterSchema)
@@ -47,6 +50,7 @@ func (o *OSDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
-func (o *OSDataBlock) Create(ctx *hcl.EvalContext, vc *govultr.Client) error {
+// Get
+func (o *OSDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
 	return nil
 }

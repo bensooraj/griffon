@@ -69,8 +69,12 @@ func (dg *DependencyGraph) GetSortedNodeIDs() ([]int64, error) {
 	}
 
 	var sortedNodeIDs []int64
+	// Add Griffon block to the beginning of the sorted list
+	sortedNodeIDs = append(sortedNodeIDs, 0)
 	for _, n := range sortedDG {
-		sortedNodeIDs = append(sortedNodeIDs, n.(blocks.Block).ID())
+		if n.ID() != 0 {
+			sortedNodeIDs = append(sortedNodeIDs, n.ID())
+		}
 	}
 	return sortedNodeIDs, nil
 }
