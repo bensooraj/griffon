@@ -5,6 +5,7 @@ import (
 
 	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/zclconf/go-cty/cty"
 )
 
 type GriffonBlock struct {
@@ -56,7 +57,8 @@ func (g *GriffonBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext
 }
 
 func (g *GriffonBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
-	// Nothing to do here really
+	ctx.Variables["region"] = cty.StringVal(g.Region)
+	ctx.Variables["vultr_api_key"] = cty.StringVal(g.VultrAPIKey)
 	return nil
 }
 

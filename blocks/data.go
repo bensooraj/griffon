@@ -40,6 +40,7 @@ func (d *DataBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) e
 			return diags
 		}
 	}
+	fmt.Println(d.Type, d.Name, " depends_on:", d.DependsOn)
 
 	filterBodyContent, _, diags := remain.PartialContent(schema.DataBlockSchema)
 	if diags.HasErrors() {

@@ -67,6 +67,7 @@ var DependsOnSchema = &hcl.BodySchema{
 var PlanFilterSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{},
 	Attributes: []hcl.AttributeSchema{
+		{Name: "type", Required: true},
 		{Name: "region", Required: true},
 		{Name: "vcpu_count", Required: false},
 		{Name: "ram", Required: false},
@@ -75,6 +76,7 @@ var PlanFilterSchema = &hcl.BodySchema{
 }
 
 type PlanFilterBlock struct {
+	Type      string
 	Region    string
 	VCPUCount int64
 	RAM       int64

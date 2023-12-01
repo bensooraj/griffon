@@ -40,7 +40,7 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 
 	hclBlocks := bodyContent.Blocks.ByType()
 	for blockName, hclBlocks := range hclBlocks {
-		fmt.Println("blockName:", blockName)
+		// fmt.Println("blockName:", blockName)
 		switch blockName {
 		case "griffon":
 			if len(hclBlocks) != 1 {
@@ -164,6 +164,13 @@ func CalculateEvaluationOrder(config *blocks.Config) (*graph.DependencyGraph, er
 			return nil, err
 		}
 	}
+	//
+	fmt.Println("\nEvluation order:")
+	for nID := range sortedNodeIDs {
+		b := dependencyGraph.Node(sortedNodeIDs[nID]).(blocks.Block)
+		fmt.Println(nID, b.BlockType(), b.BlockName())
+	}
+	fmt.Println()
 
 	return dependencyGraph, nil
 }
@@ -180,7 +187,10 @@ func EvaluateConfig(config *blocks.Config, vc *govultr.Client) error {
 		node := dependencyGraph.Node(nodeID).(blocks.Block)
 
 		// Process the block using the evaluation context
-		node.ProcessConfiguration(evalCtx)
+		err := node.ProcessConfiguration(evalCtx)
+		if err != nil {
+			return err
+		}
 
 		switch b := node.(type) {
 		case *blocks.GriffonBlock:
@@ -189,6 +199,11 @@ func EvaluateConfig(config *blocks.Config, vc *govultr.Client) error {
 			*blocks.OSDataBlock,
 			*blocks.PlanDataBlock:
 			fmt.Println("Data:", b.BlockType(), b.BlockName())
+			err := b.Get(context.Background(), evalCtx, vc)
+			if err != nil {
+				return err
+			}
+			fmt.Println("Evaluation context:", evalCtx.Variables["data"].GoString())
 
 		case *blocks.SSHKeyBlock,
 			*blocks.StartupScriptBlock,

@@ -118,18 +118,7 @@ func TestAPICall(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockVultr := mocks.NewMockVultrClient(ctrl)
-	mockStartupScriptService := mocks.NewMockStartupScriptService(ctrl)
-	mockStartupScriptService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&govultr.StartupScript{
-		ID:           "cb676a46-66fd-4dfb-b839-443f2e6c0b60",
-		DateCreated:  "2020-10-10T01:56:20+00:00",
-		DateModified: "2020-10-10T01:59:20+00:00",
-		Name:         "my_key",
-		Type:         "pxe",
-		Script:       "ssh-rsa AAAAB3NzaC1yc2E",
-	}, &http.Response{}, nil)
-
-	mockVultr.StartupScript = mockStartupScriptService
+	mockVultr := setupMockVultrClient(t, ctrl)
 
 	b, err := os.ReadFile("../testdata/test_1.hcl")
 	if err != nil {
@@ -151,4 +140,130 @@ func TestAPICall(t *testing.T) {
 	expectedSSHKeyBlock := blocks.SSHKeyBlock{SSHKey: "ssh-rsa AAAAB3NzaC1yc2E", ResourceBlock: blocks.ResourceBlock{Name: "my_key", Type: "ssh_key"}}
 	require.Equalf(t, expectedSSHKeyBlock, config.Resources[blocks.SSHKeyBlockType]["my_key"], "SSHKeyBlock parsed incorrectly")
 
+}
+
+func TestEvaluateConfig(t *testing.T) {
+
+	t.Setenv("VULTR_API_KEY", "AxDfCdASdFzzxserDFWSD")
+
+	defer t.Cleanup(func() {
+		t.Setenv("VULTR_API_KEY", "")
+	})
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockVultr := setupMockVultrClient(t, ctrl)
+
+	type args struct {
+		config *blocks.Config
+		vc     *govultr.Client
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "test evaluate config",
+			args:    args{config: &blocks.Config{}, vc: mockVultr},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := EvaluateConfig(tt.args.config, tt.args.vc); (err != nil) != tt.wantErr {
+				t.Errorf("EvaluateConfig() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func setupMockVultrClient(t *testing.T, ctrl *gomock.Controller) *govultr.Client {
+	t.Helper()
+
+	mockVultr := mocks.NewMockVultrClient(ctrl)
+
+	// 1. Data
+	// 1.1 Regions
+	mockRegionService := mocks.NewMockRegionService(ctrl)
+	mockRegionService.EXPECT().List(gomock.Any(), gomock.Any()).Return([]govultr.Region{
+		{
+			ID:        "ams",
+			City:      "Amsterdam",
+			Country:   "NL",
+			Continent: "Europe",
+			Options:   []string{"ddos_protection", "block_storage_high_perf", "block_storage_storage_opt", "kubernetes", "load_balancers"},
+		},
+	}, &govultr.Meta{}, &http.Response{}, nil).AnyTimes()
+	mockVultr.Region = mockRegionService
+	// 1.2 OS
+	mockOSService := mocks.NewMockOSService(ctrl)
+	mockOSService.EXPECT().List(gomock.Any(), gomock.Any()).Return([]govultr.OS{}, &govultr.Meta{}, &http.Response{}, nil).AnyTimes()
+	mockVultr.OS = mockOSService
+	// 1.3 Plans
+	mockPlanService := mocks.NewMockPlanService(ctrl)
+	mockPlanService.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return([]govultr.Plan{
+		{
+			ID:          "vhf-8c-32gb",
+			VCPUCount:   8,
+			RAM:         32768,
+			Disk:        512,
+			DiskCount:   1,
+			Bandwidth:   6144,
+			MonthlyCost: 192,
+			Type:        "vhf",
+			Locations:   []string{"ams", "atl", "dfw", "fra", "hnd", "lax", "lhr", "mia", "nrt", "ord", "sea", "sgp", "sjc", "syd", "tor"},
+		},
+	}, &govultr.Meta{}, &http.Response{}, nil).AnyTimes()
+	mockVultr.Plan = mockPlanService
+
+	// 2. Resources
+	// 2.1 Instance
+	mockStartupScriptService := mocks.NewMockStartupScriptService(ctrl)
+	mockStartupScriptService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&govultr.StartupScript{
+		ID:           "cb676a46-66fd-4dfb-b839-443f2e6c0b60",
+		DateCreated:  "2020-10-10T01:56:20+00:00",
+		DateModified: "2020-10-10T01:59:20+00:00",
+		Name:         "my_key",
+		Type:         "pxe",
+		Script:       "ssh-rsa AAAAB3NzaC1yc2E",
+	}, &http.Response{}, nil).AnyTimes()
+	mockVultr.StartupScript = mockStartupScriptService
+	// 2.2 SSHKey
+	mockSSHKeyService := mocks.NewMockSSHKeyService(ctrl)
+	mockSSHKeyService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&govultr.SSHKey{
+		ID:          "cb676a46-66fd-4dfb-b839-443f2e6c0b60",
+		Name:        "my_key",
+		SSHKey:      "ssh-rsa AAAAB3NzaC1yc2E",
+		DateCreated: "2020-10-10T01:56:20+00:00",
+	}, &http.Response{}, nil).AnyTimes()
+	mockVultr.SSHKey = mockSSHKeyService
+	// 2.3 Instance
+	mockInstanceService := mocks.NewMockInstanceService(ctrl)
+	mockInstanceService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&govultr.Instance{
+		ID:               "4f0f12e5-1f84-404f-aa84-85f431ea5ec2",
+		Region:           "ams",
+		Plan:             "vc2-1c-1gb",
+		Os:               "CentOS 8 Stream",
+		OsID:             362,
+		RAM:              1024,
+		Disk:             25,
+		MainIP:           "",
+		VCPUCount:        1,
+		DateCreated:      "2020-10-10T01:56:20+00:00",
+		Status:           "pending",
+		AllowedBandwidth: 1000,
+		DefaultPassword:  "v5{Fkvb#2ycPGwHs",
+		NetmaskV4:        "",
+		GatewayV4:        "0.0.0.0",
+		PowerStatus:      "running",
+		ServerStatus:     "ok",
+		Tags: []string{
+			"tag1",
+		},
+	}, &http.Response{}, nil).AnyTimes()
+	mockVultr.Instance = mockInstanceService
+
+	return mockVultr
 }

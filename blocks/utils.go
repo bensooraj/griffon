@@ -62,7 +62,7 @@ func ExprAsStringSlice(expr hcl.Expression) ([]string, hcl.Diagnostics) {
 			exprSlice = append(exprSlice, BuildBlockPath(paths...))
 		}
 	}
-	fmt.Println("exprSlice:", exprSlice)
+	// fmt.Println("exprSlice:", exprSlice)
 	return exprSlice, nil
 }
 

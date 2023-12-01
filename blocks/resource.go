@@ -2,6 +2,7 @@ package blocks
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
@@ -41,6 +42,7 @@ func (r *ResourceBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContex
 			return diags
 		}
 	}
+	fmt.Println(block.Type, r.Name, " depends_on:", r.DependsOn)
 
 	r.Type = BlockType(block.Type)
 

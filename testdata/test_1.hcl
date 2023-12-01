@@ -1,5 +1,5 @@
 griffon {
-    region = "us-east-1"
+    region = "ams"
     vultr_api_key = env.VULTR_API_KEY
 }
 
@@ -7,12 +7,13 @@ data "region" "current" {}
 
 data "plan" "all" {
     filter {
-        region = region.current.id
-        vcpu_count = 1
-        ram = 1024
-        disk = 20
+        type = "all"
+        region = data.region.current.id
+        vcpu_count = 8
+        ram = 32768
+        disk = 512
     }
-    // depends_on = [data.region.current]
+    depends_on = [data.region.current]
 }
 
 data "os" "centos" {
@@ -26,7 +27,7 @@ data "os" "centos" {
 
 ssh_key "my_key" {
     ssh_key = "ssh-rsa AAAAB3NzaC1yc2E"
-    // depends_on = [data.plan.all]
+    depends_on = [data.plan.all]
 }
 
 startup_script "my_script" {
