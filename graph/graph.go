@@ -31,7 +31,7 @@ func (dg *DependencyGraph) LoadGriffonConfig(config *blocks.Config) error {
 		for blockName, block := range blockMap {
 			fmt.Printf("...Loading Data %s::%s into Dependency Graph\n", blockType, blockName)
 			dg.AddNode(block)
-			dg.blockPathToGraphID[blocks.BuildBlockPath(string(blockType), blockName)] = block.ID()
+			dg.blockPathToGraphID[blocks.BuildBlockPath("data", string(blockType), blockName)] = block.ID()
 		}
 	}
 	for blockType, blockMap := range config.Resources {
@@ -42,17 +42,24 @@ func (dg *DependencyGraph) LoadGriffonConfig(config *blocks.Config) error {
 		}
 	}
 
+	fmt.Println()
 	// Add edges to graph
 	nodes := dg.Nodes()
 	for nodes.Next() {
-		node := nodes.Node().(blocks.Block)
-		d := node.Dependencies()
-		for _, dep := range d {
-			if dNode := dg.Node(dg.blockPathToGraphID[dep]); dNode != nil {
-				dg.SetEdge(dg.NewEdge(dNode, node))
+		toNode := nodes.Node().(blocks.Block)
+		fmt.Printf("...Processing node [%d] %s.%s\n", toNode.ID(), toNode.BlockType(), toNode.BlockName())
+		deps := toNode.Dependencies()
+		for _, dep := range deps {
+			if fromNode := dg.Node(dg.blockPathToGraphID[dep]); fromNode != nil {
+				fmt.Printf("... ...Adding edge from [%d] %s.%s to [%d] %s.%s\n", fromNode.ID(), fromNode.(blocks.Block).BlockType(), fromNode.(blocks.Block).BlockName(), toNode.ID(), toNode.BlockType(), toNode.BlockName())
+				dg.SetEdge(dg.NewEdge(fromNode, toNode))
 			}
 		}
+		fmt.Println()
 	}
+	fmt.Println()
+
+	fmt.Printf("\nBlockPathToGraphID: %+v\n", dg.blockPathToGraphID)
 
 	return nil
 }

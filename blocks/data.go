@@ -64,6 +64,6 @@ func (d *DataBlock) Dependencies() []string {
 	return d.DependsOn
 }
 
-func (p *DataBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
-	return nil
+func (p *DataBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) (*hcl.EvalContext, error) {
+	return nil, nil
 }

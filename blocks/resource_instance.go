@@ -81,7 +81,7 @@ func (i *InstanceBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
-func (i *InstanceBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
+func (i *InstanceBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) (*hcl.EvalContext, error) {
 	fmt.Println("Creating instance", i.Name)
 	ins, _, err := vc.Instance.Create(ctx, &govultr.InstanceCreateReq{
 		Region:   i.Region,
@@ -93,7 +93,7 @@ func (i *InstanceBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc
 		Tags:     i.Tags,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	i.VID = ins.ID
@@ -112,5 +112,5 @@ func (i *InstanceBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc
 	fmt.Println("Created instance", i.Name, i.VID)
 	fmt.Printf("Created instance %+v\n", ins)
 
-	return nil
+	return nil, nil
 }

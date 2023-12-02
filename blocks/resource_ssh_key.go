@@ -44,18 +44,18 @@ func (s *SSHKeyBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
-func (s *SSHKeyBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
+func (s *SSHKeyBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) (*hcl.EvalContext, error) {
 	fmt.Println("Creating SSH Key", s.Name)
 	sshKey, _, err := vc.SSHKey.Create(context.Background(), &govultr.SSHKeyReq{
 		Name:   s.Name,
 		SSHKey: s.SSHKey,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	s.VID = sshKey.ID
 	s.DateCreated = sshKey.DateCreated
 
-	return nil
+	return nil, nil
 }

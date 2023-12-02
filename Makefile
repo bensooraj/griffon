@@ -6,7 +6,7 @@ run: build
 	./bin/griffon
 
 dot:
-	dot -Tpng graph.dot -o output.png
+	dot -Tpng parser/dependency_graph.dot -o parser/output.png
 
 generate:
 	# https://github.com/uber-go/mock

@@ -51,6 +51,6 @@ func (o *OSDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 }
 
 // Get
-func (o *OSDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
-	return nil
+func (o *OSDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) (*hcl.EvalContext, error) {
+	return nil, nil
 }

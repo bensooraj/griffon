@@ -54,6 +54,6 @@ func (r *ResourceBlock) Dependencies() []string {
 }
 
 // Implement Get
-func (r *ResourceBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
-	return nil
+func (r *ResourceBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) (*hcl.EvalContext, error) {
+	return nil, nil
 }

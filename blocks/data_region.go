@@ -30,10 +30,10 @@ func (r *RegionDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 }
 
 // GET
-func (r *RegionDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
+func (r *RegionDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) (*hcl.EvalContext, error) {
 	regions, meta, _, err := vc.Region.List(ctx, &govultr.ListOptions{PerPage: 100})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	fmt.Println("RegionDataBlock::Get::meta:", meta)
 	regionID := evalCtx.Variables["region"].AsString()
@@ -65,5 +65,5 @@ func (r *RegionDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc 
 
 	fmt.Printf("....(data.region.%s) Evaluation context: %s\n", r.Name, evalCtx.Variables["data"].GoString())
 
-	return nil
+	return nil, nil
 }

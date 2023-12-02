@@ -148,12 +148,6 @@ func CalculateEvaluationOrder(config *blocks.Config) (*graph.DependencyGraph, er
 		return nil, err
 	}
 
-	sortedNodeIDs, err := dependencyGraph.GetSortedNodeIDs()
-	if err != nil {
-		return nil, err
-	}
-	config.EvaluationOrder = sortedNodeIDs
-
 	if os.Getenv("GENERATE_DOT_FILE") == "true" {
 		dotByteArr, err := dot.Marshal(dependencyGraph, "dependency_graph.dot", "", "")
 		if err != nil {
@@ -164,12 +158,18 @@ func CalculateEvaluationOrder(config *blocks.Config) (*graph.DependencyGraph, er
 			return nil, err
 		}
 	}
-	//
-	fmt.Println("\nEvluation order:")
-	for nID := range sortedNodeIDs {
-		b := dependencyGraph.Node(sortedNodeIDs[nID]).(blocks.Block)
-		fmt.Println(nID, b.BlockType(), b.BlockName())
+
+	sortedNodeIDs, err := dependencyGraph.GetSortedNodeIDs()
+	if err != nil {
+		return nil, err
 	}
+	config.EvaluationOrder = sortedNodeIDs
+	//
+	// fmt.Println("\nEvluation order:")
+	// for i, nID := range sortedNodeIDs {
+	// 	b := dependencyGraph.Node(nID).(blocks.Block)
+	// 	fmt.Println(i, nID, b.BlockType(), b.BlockName())
+	// }
 	fmt.Println()
 
 	return dependencyGraph, nil
@@ -199,7 +199,7 @@ func EvaluateConfig(config *blocks.Config, vc *govultr.Client) error {
 			*blocks.OSDataBlock,
 			*blocks.PlanDataBlock:
 			fmt.Println("Data:", b.BlockType(), b.BlockName())
-			err := b.Get(context.Background(), evalCtx, vc)
+			_, err := b.Get(context.Background(), evalCtx, vc)
 			if err != nil {
 				return err
 			}
@@ -209,7 +209,7 @@ func EvaluateConfig(config *blocks.Config, vc *govultr.Client) error {
 			*blocks.StartupScriptBlock,
 			*blocks.InstanceBlock:
 			fmt.Println("Resource:", b.BlockType(), b.BlockName())
-			err := b.Create(context.Background(), evalCtx, vc)
+			_, err := b.Create(context.Background(), evalCtx, vc)
 			if err != nil {
 				return err
 			}

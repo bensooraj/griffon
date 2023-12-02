@@ -61,10 +61,10 @@ func (p *PlanDataBlock) ProcessConfiguration(evalCtx *hcl.EvalContext) error {
 }
 
 // Get
-func (p *PlanDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
+func (p *PlanDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) (*hcl.EvalContext, error) {
 	plans, meta, _, err := vc.Plan.List(ctx, p.filter.Type, &govultr.ListOptions{PerPage: 100})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	fmt.Println("PlanDataBlock::Get::meta:", meta)
 	found := false
@@ -95,7 +95,7 @@ func (p *PlanDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *g
 	}
 
 	if !found {
-		return ErrorDataNotFound
+		return nil, ErrorDataNotFound
 	}
 
 	// Update the evaluation context variables
@@ -119,5 +119,5 @@ func (p *PlanDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *g
 
 	fmt.Printf("....(data.plan.%s) Evaluation context: %s\n", p.Name, evalCtx.Variables["data"].GoString())
 
-	return nil
+	return nil, nil
 }
