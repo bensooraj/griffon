@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/vultr/govultr/v3"
+	"github.com/zclconf/go-cty/cty"
 )
 
 type Block interface {
@@ -21,4 +22,6 @@ type Block interface {
 	Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) (*hcl.EvalContext, error)
 	// Create the block by making API calls
 	Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) (*hcl.EvalContext, error)
+	// ToCtyValue
+	ToCtyValue() (cty.Value, error)
 }

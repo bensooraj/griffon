@@ -9,6 +9,8 @@ import (
 	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/vultr/govultr/v3"
+	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/gocty"
 )
 
 type InstanceBlock struct {
@@ -20,18 +22,18 @@ type InstanceBlock struct {
 	Hostname        string   `hcl:"hostname,attr" json:"hostname"`
 	Tags            []string `hcl:"tag,attr" json:"tags"`
 
-	VID             string `json:"id"`
-	Os              string `json:"os"`
-	RAM             int    `json:"ram"`
-	Disk            int    `json:"disk"`
-	MainIP          string `json:"main_ip"`
-	VCPUCount       int    `json:"vcpu_count"`
-	DefaultPassword string `json:"default_password,omitempty"`
-	DateCreated     string `json:"date_created"`
-	Status          string `json:"status"`
-	PowerStatus     string `json:"power_status"`
-	ServerStatus    string `json:"server_status"`
-	InternalIP      string `json:"internal_ip"`
+	VID             string `json:"id" cty:"id"`
+	Os              string `json:"os" cty:"os"`
+	RAM             int    `json:"ram" cty:"ram"`
+	Disk            int    `json:"disk" cty:"disk"`
+	MainIP          string `json:"main_ip" cty:"main_ip"`
+	VCPUCount       int    `json:"vcpu_count" cty:"vcpu_count"`
+	DefaultPassword string `json:"default_password,omitempty" cty:"default_password"`
+	DateCreated     string `json:"date_created" cty:"date_created"`
+	Status          string `json:"status" cty:"status"`
+	PowerStatus     string `json:"power_status" cty:"power_status"`
+	ServerStatus    string `json:"server_status" cty:"server_status"`
+	InternalIP      string `json:"internal_ip" cty:"internal_ip"`
 
 	ResourceBlock
 }
@@ -113,4 +115,21 @@ func (i *InstanceBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc
 	fmt.Printf("Created instance %+v\n", ins)
 
 	return nil, nil
+}
+
+func (i *InstanceBlock) ToCtyValue() (cty.Value, error) {
+	return gocty.ToCtyValue(i, cty.Object(map[string]cty.Type{
+		"id":               cty.String,
+		"os":               cty.String,
+		"ram":              cty.Number,
+		"disk":             cty.Number,
+		"main_ip":          cty.String,
+		"vcpu_count":       cty.Number,
+		"default_password": cty.String,
+		"date_created":     cty.String,
+		"status":           cty.String,
+		"power_status":     cty.String,
+		"server_status":    cty.String,
+		"internal_ip":      cty.String,
+	}))
 }

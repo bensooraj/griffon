@@ -7,14 +7,15 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/vultr/govultr/v3"
 	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/gocty"
 )
 
 type RegionDataBlock struct {
-	VultrID   string   `json:"id"`
-	City      string   `json:"city"`
-	Country   string   `json:"country"`
-	Continent string   `json:"continent"`
-	Options   []string `json:"options"`
+	VultrID   string   `json:"id" cty:"id"`
+	City      string   `json:"city" cty:"city"`
+	Country   string   `json:"country" cty:"country"`
+	Continent string   `json:"continent" cty:"continent"`
+	Options   []string `json:"options" `
 	DataBlock
 }
 
@@ -66,4 +67,14 @@ func (r *RegionDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc 
 	fmt.Printf("....(data.region.%s) Evaluation context: %s\n", r.Name, evalCtx.Variables["data"].GoString())
 
 	return nil, nil
+}
+
+// ToCtyValue
+func (r *RegionDataBlock) ToCtyValue() (cty.Value, error) {
+	return gocty.ToCtyValue(r, cty.Object(map[string]cty.Type{
+		"id":        cty.String,
+		"city":      cty.String,
+		"country":   cty.String,
+		"continent": cty.String,
+	}))
 }

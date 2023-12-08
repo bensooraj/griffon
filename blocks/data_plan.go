@@ -9,17 +9,18 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/vultr/govultr/v3"
 	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/gocty"
 )
 
 type PlanDataBlock struct {
-	VultrID     string   `json:"id"`
-	VCPUCount   int      `json:"vcpu_count"`
-	RAM         int      `json:"ram"`
-	Disk        int      `json:"disk"`
-	DiskCount   int      `json:"disk_count"`
-	Bandwidth   int      `json:"bandwidth"`
-	MonthlyCost float32  `json:"monthly_cost"`
-	PlanType    string   `json:"type"`
+	VultrID     string   `json:"id" cty:"id"`
+	VCPUCount   int      `json:"vcpu_count" cty:"vcpu_count"`
+	RAM         int      `json:"ram" cty:"ram"`
+	Disk        int      `json:"disk" cty:"disk"`
+	DiskCount   int      `json:"disk_count" cty:"disk_count"`
+	Bandwidth   int      `json:"bandwidth" cty:"bandwidth"`
+	MonthlyCost float32  `json:"monthly_cost" cty:"monthly_cost"`
+	PlanType    string   `json:"type" cty:"type"`
 	Locations   []string `json:"locations"`
 	filter      schema.PlanFilterBlock
 	DataBlock
@@ -120,4 +121,18 @@ func (p *PlanDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *g
 	fmt.Printf("....(data.plan.%s) Evaluation context: %s\n", p.Name, evalCtx.Variables["data"].GoString())
 
 	return nil, nil
+}
+
+// ToCtyValue
+func (p *PlanDataBlock) ToCtyValue() (cty.Value, error) {
+	return gocty.ToCtyValue(p, cty.Object(map[string]cty.Type{
+		"id":           cty.String,
+		"vcpu_count":   cty.Number,
+		"ram":          cty.Number,
+		"disk":         cty.Number,
+		"disk_count":   cty.Number,
+		"bandwidth":    cty.Number,
+		"monthly_cost": cty.Number,
+		"type":         cty.String,
+	}))
 }

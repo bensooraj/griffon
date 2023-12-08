@@ -8,14 +8,16 @@ import (
 	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/vultr/govultr/v3"
+	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/gocty"
 )
 
 type StartupScriptBlock struct {
-	Script        string `hcl:"script" json:"script"`
-	VID           string `json:"id"`
-	VDateCreated  string `json:"date_created"`
-	VDateModified string `json:"date_modified"`
-	VType         string `json:"type"`
+	Script        string `hcl:"script" json:"script" cty:"script"`
+	VID           string `json:"id" cty:"id"`
+	VDateCreated  string `json:"date_created" cty:"date_created"`
+	VDateModified string `json:"date_modified" cty:"date_modified"`
+	VType         string `json:"type" cty:"type"`
 	ResourceBlock
 }
 
@@ -62,4 +64,15 @@ func (s *StartupScriptBlock) Create(ctx context.Context, evalCtx *hcl.EvalContex
 	s.VType = ss.Type
 
 	return nil, nil
+}
+
+// ToCtyValue
+func (s *StartupScriptBlock) ToCtyValue() (cty.Value, error) {
+	return gocty.ToCtyValue(s, cty.Object(map[string]cty.Type{
+		"id":            cty.String,
+		"script":        cty.String,
+		"date_created":  cty.String,
+		"date_modified": cty.String,
+		"type":          cty.String,
+	}))
 }

@@ -8,12 +8,14 @@ import (
 	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/vultr/govultr/v3"
+	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/gocty"
 )
 
 type SSHKeyBlock struct {
-	SSHKey      string `hcl:"ssh_key" json:"ssh_key"`
-	DateCreated string `json:"date_created"`
-	VID         string `json:"id"`
+	SSHKey      string `hcl:"ssh_key" json:"ssh_key" cty:"ssh_key"`
+	DateCreated string `json:"date_created" cty:"date_created"`
+	VID         string `json:"id" cty:"id"`
 	ResourceBlock
 }
 
@@ -58,4 +60,13 @@ func (s *SSHKeyBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *
 	s.DateCreated = sshKey.DateCreated
 
 	return nil, nil
+}
+
+// ToCtyValue
+func (s *SSHKeyBlock) ToCtyValue() (cty.Value, error) {
+	return gocty.ToCtyValue(s, cty.Object(map[string]cty.Type{
+		"id":           cty.String,
+		"ssh_key":      cty.String,
+		"date_created": cty.String,
+	}))
 }
