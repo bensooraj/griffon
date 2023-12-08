@@ -13,10 +13,10 @@ import (
 )
 
 type OSDataBlock struct {
-	VultrID int    `json:"id" cty:"id"`
-	OSName  string `json:"name" cty:"name"`
-	Arch    string `json:"arch" cty:"arch"`
-	Family  string `json:"family" cty:"family"`
+	VID    int    `json:"id" cty:"id"`
+	OSName string `json:"name" cty:"name"`
+	Arch   string `json:"arch" cty:"arch"`
+	Family string `json:"family" cty:"family"`
 	DataBlock
 }
 

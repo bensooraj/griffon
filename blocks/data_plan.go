@@ -13,7 +13,7 @@ import (
 )
 
 type PlanDataBlock struct {
-	VultrID     string   `json:"id" cty:"id"`
+	VID         string   `json:"id" cty:"id"`
 	VCPUCount   int      `json:"vcpu_count" cty:"vcpu_count"`
 	RAM         int      `json:"ram" cty:"ram"`
 	Disk        int      `json:"disk" cty:"disk"`
@@ -77,7 +77,7 @@ func (p *PlanDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *g
 
 			for _, loc := range plan.Locations {
 				if loc == p.filter.Region {
-					p.VultrID = plan.ID
+					p.VID = plan.ID
 					p.VCPUCount = plan.VCPUCount
 					p.RAM = plan.RAM
 					p.Disk = plan.Disk
@@ -105,7 +105,7 @@ func (p *PlanDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *g
 		"data": cty.ObjectVal(map[string]cty.Value{
 			"plan": cty.ObjectVal(map[string]cty.Value{
 				p.Name: cty.ObjectVal(map[string]cty.Value{
-					"id":           cty.StringVal(p.VultrID),
+					"id":           cty.StringVal(p.VID),
 					"vcpu_count":   cty.NumberIntVal(int64(p.VCPUCount)),
 					"ram":          cty.NumberIntVal(int64(p.RAM)),
 					"disk":         cty.NumberIntVal(int64(p.Disk)),

@@ -11,7 +11,7 @@ import (
 )
 
 type RegionDataBlock struct {
-	VultrID   string   `json:"id" cty:"id"`
+	VID       string   `json:"id" cty:"id"`
 	City      string   `json:"city" cty:"city"`
 	Country   string   `json:"country" cty:"country"`
 	Continent string   `json:"continent" cty:"continent"`
@@ -41,7 +41,7 @@ func (r *RegionDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc 
 
 	for _, region := range regions {
 		if region.ID == regionID {
-			r.VultrID = region.ID
+			r.VID = region.ID
 			r.City = region.City
 			r.Country = region.Country
 			r.Continent = region.Continent
@@ -55,7 +55,7 @@ func (r *RegionDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc 
 		"data": cty.ObjectVal(map[string]cty.Value{
 			"region": cty.ObjectVal(map[string]cty.Value{
 				r.Name: cty.ObjectVal(map[string]cty.Value{
-					"id":        cty.StringVal(r.VultrID),
+					"id":        cty.StringVal(r.VID),
 					"city":      cty.StringVal(r.City),
 					"country":   cty.StringVal(r.Country),
 					"continent": cty.StringVal(r.Continent),
