@@ -31,6 +31,16 @@ func GetEvalContext() *hcl.EvalContext {
 		"VULTR_API_KEY": cty.StringVal(os.Getenv("VULTR_API_KEY")),
 	})
 
+	// Initialize the data block
+	vars["data"] = cty.ObjectVal(map[string]cty.Value{
+		string(blocks.RegionBlockType): cty.ObjectVal(map[string]cty.Value{}),
+		string(blocks.PlanBlockType):   cty.ObjectVal(map[string]cty.Value{}),
+		string(blocks.OSBlockType):     cty.ObjectVal(map[string]cty.Value{}),
+	})
+	vars[string(blocks.SSHKeyBlockType)] = cty.ObjectVal(map[string]cty.Value{})
+	vars[string(blocks.StartupScriptBlockType)] = cty.ObjectVal(map[string]cty.Value{})
+	vars[string(blocks.InstanceBlockType)] = cty.ObjectVal(map[string]cty.Value{})
+
 	functions := make(map[string]function.Function)
 
 	// Built-in functions

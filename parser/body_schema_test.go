@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/vultr/govultr/v3"
+	"github.com/zclconf/go-cty/cty"
 	"go.uber.org/mock/gomock"
 )
 
@@ -266,4 +267,179 @@ func setupMockVultrClient(t *testing.T, ctrl *gomock.Controller) *govultr.Client
 	mockVultr.Instance = mockInstanceService
 
 	return mockVultr
+}
+
+func TestEvaluationContext(t *testing.T) {
+	evalCtx := GetEvalContext()
+	//
+	err := AddBlockToEvalContext(evalCtx, &blocks.RegionDataBlock{
+		DataBlock: blocks.DataBlock{Type: blocks.RegionBlockType, Name: "region_1"},
+		VID:       "ams",
+		City:      "Amsterdam",
+		Country:   "NL",
+		Continent: "Europe",
+	})
+	if err != nil {
+		t.Log("Error adding region data block to eval context:", err)
+	}
+
+	// add another region
+	err = AddBlockToEvalContext(evalCtx, &blocks.RegionDataBlock{
+		DataBlock: blocks.DataBlock{Type: blocks.RegionBlockType, Name: "region_2"},
+		VID:       "use",
+		City:      "New York",
+		Country:   "US",
+		Continent: "North America",
+	})
+	if err != nil {
+		t.Log("Error adding another region data block to eval context:", err)
+	}
+
+	// add a plan
+	err = AddBlockToEvalContext(evalCtx, &blocks.PlanDataBlock{
+		DataBlock:   blocks.DataBlock{Type: blocks.PlanBlockType, Name: "plan_1"},
+		VID:         "vhf-8c-32gb",
+		VCPUCount:   8,
+		RAM:         32768,
+		Disk:        512,
+		DiskCount:   1,
+		Bandwidth:   6144,
+		MonthlyCost: 192,
+		PlanType:    "vhf",
+	})
+	if err != nil {
+		t.Log("Error adding plan data block to eval context:", err)
+	}
+
+	// add an OS
+	err = AddBlockToEvalContext(evalCtx, &blocks.OSDataBlock{
+		DataBlock: blocks.DataBlock{Type: blocks.OSBlockType, Name: "os_1"},
+		VID:       362,
+		OSName:    "CentOS 8 Stream",
+		Arch:      "x64",
+		Family:    "centos",
+	})
+	if err != nil {
+		t.Log("Error adding OS data block to eval context:", err)
+	}
+
+	// add an SSHKey
+	err = AddBlockToEvalContext(evalCtx, &blocks.SSHKeyBlock{
+		ResourceBlock: blocks.ResourceBlock{Type: blocks.SSHKeyBlockType, Name: "ssh_key_1"},
+		VID:           "cb676a46-66fd-4dfb-b839-443f2e6c0b60",
+		SSHKey:        "ssh-rsa AAAAB3NzaC1yc2E",
+		DateCreated:   "2020-10-10T01:56:20+00:00",
+	})
+	if err != nil {
+		t.Log("Error adding SSH Key resource block to eval context:", err)
+	}
+
+	// add another SSHKey
+	err = AddBlockToEvalContext(evalCtx, &blocks.SSHKeyBlock{
+		ResourceBlock: blocks.ResourceBlock{Type: blocks.SSHKeyBlockType, Name: "ssh_key_2"},
+		VID:           "cb676a46-66fd-4dfb-b839-443f2e6c0b60",
+		SSHKey:        "ssh-rsa AAAAB3NzaC1yc2E",
+		DateCreated:   "2020-10-10T01:56:20+00:00",
+	})
+	if err != nil {
+		t.Log("Error adding another SSH Key resource block to eval context:", err)
+	}
+
+	// add a StartupScript
+	err = AddBlockToEvalContext(evalCtx, &blocks.StartupScriptBlock{
+		ResourceBlock: blocks.ResourceBlock{Type: blocks.StartupScriptBlockType, Name: "startup_script_1"},
+		VID:           "cb676a46-66fd-4dfb-b839-443f2e6c0b60",
+		VDateCreated:  "2020-10-10T01:56:20+00:00",
+		VDateModified: "2020-10-10T01:59:20+00:00",
+		VType:         "pxe",
+	})
+	if err != nil {
+		t.Log("Error adding StartupScript resource block to eval context:", err)
+	}
+
+	// add an Instance
+	err = AddBlockToEvalContext(evalCtx, &blocks.InstanceBlock{
+		ResourceBlock: blocks.ResourceBlock{Type: blocks.InstanceBlockType, Name: "instance_1"},
+		VID:           "4f0f12e5-1f84-404f-aa84-85f431ea5ec2",
+		Os:            "CentOS 8 Stream",
+		RAM:           1024,
+		Disk:          25,
+		VCPUCount:     1,
+		Status:        "pending",
+	})
+	if err != nil {
+		t.Log("Error adding Instance resource block to eval context:", err)
+	}
+
+	fmt.Println("[AFTER] data:", evalCtx.Variables["data"].GoString())
+	fmt.Println("[AFTER] SSH Key:", evalCtx.Variables[string(blocks.SSHKeyBlockType)].GoString())
+	fmt.Println("[AFTER] Startup Script:", evalCtx.Variables[string(blocks.StartupScriptBlockType)].GoString())
+	fmt.Println("[AFTER] Instance:", evalCtx.Variables[string(blocks.InstanceBlockType)].GoString())
+
+	t.Fail()
+}
+
+func AddBlockToEvalContext(evalCtx *hcl.EvalContext, block blocks.Block) error {
+	data, ok := evalCtx.Variables["data"]
+	if !ok {
+		return fmt.Errorf("data block not found in evaluation context")
+	}
+	fmt.Println("[BEFORE] data:", data.GoString())
+
+	switch block.BlockType() {
+	case blocks.RegionBlockType,
+		blocks.OSBlockType,
+		blocks.PlanBlockType:
+		dataMap := data.AsValueMap()
+		fmt.Println("dataMap[`region`]: ", dataMap["region"])
+		// Check if the blockTypeVal key exists in dataVars
+		fmt.Println("block.BlockType():", block.BlockType(), "block.BlockName():", block.BlockName())
+		if blockCtyVal := data.GetAttr(string(block.BlockType())); !blockCtyVal.IsNull() {
+			// Get the map of blocks
+			var blockMap map[string]cty.Value
+			// Convert the block to a cty.Value
+			blockVal, err := block.ToCtyValue()
+			if err != nil {
+				return err
+			}
+
+			if blockCtyVal.Equals(cty.EmptyObjectVal).True() {
+				fmt.Println("2. blockTypeVal is empty", blockCtyVal.Type().FriendlyName())
+				blockMap = make(map[string]cty.Value)
+			} else {
+				fmt.Println("3. blockTypeVal is empty", blockCtyVal.Type().FriendlyName())
+				blockMap = blockCtyVal.AsValueMap()
+			}
+			// Add the block to the region map
+			blockMap[block.BlockName()] = blockVal
+			// Set the data key to the updated data
+			dataMap[string(block.BlockType())] = cty.ObjectVal(blockMap)
+			evalCtx.Variables["data"] = cty.ObjectVal(dataMap)
+		}
+	case blocks.InstanceBlockType,
+		blocks.SSHKeyBlockType,
+		blocks.StartupScriptBlockType:
+		// Get the map of blocks
+		var blockMap map[string]cty.Value
+		// Convert the block to a cty.Value
+		blockVal, err := block.ToCtyValue()
+		if err != nil {
+			return err
+		}
+
+		blockCtyVal := evalCtx.Variables[string(block.BlockType())]
+		if blockCtyVal.Equals(cty.EmptyObjectVal).True() {
+			blockMap = make(map[string]cty.Value)
+		} else {
+			blockMap = blockCtyVal.AsValueMap()
+		}
+		// Add the block to the region map
+		blockMap[block.BlockName()] = blockVal
+		evalCtx.Variables[string(block.BlockType())] = cty.ObjectVal(blockMap)
+
+	default:
+		return fmt.Errorf("block type %s not supported", block.BlockType())
+	}
+
+	return nil
 }
