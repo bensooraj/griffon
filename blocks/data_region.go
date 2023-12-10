@@ -50,20 +50,6 @@ func (r *RegionDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc 
 		}
 	}
 
-	// Update the evaluation context variables
-	evalCtx.Variables = map[string]cty.Value{
-		"data": cty.ObjectVal(map[string]cty.Value{
-			"region": cty.ObjectVal(map[string]cty.Value{
-				r.Name: cty.ObjectVal(map[string]cty.Value{
-					"id":        cty.StringVal(r.VID),
-					"city":      cty.StringVal(r.City),
-					"country":   cty.StringVal(r.Country),
-					"continent": cty.StringVal(r.Continent),
-				}),
-			}),
-		}),
-	}
-
 	fmt.Printf("....(data.region.%s) Evaluation context: %s\n", r.Name, evalCtx.Variables["data"].GoString())
 
 	return nil, nil

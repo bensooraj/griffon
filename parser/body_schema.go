@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/vultr/govultr/v3"
+	"github.com/zclconf/go-cty/cty"
 	"gonum.org/v1/gonum/graph/encoding/dot"
 )
 
@@ -203,6 +204,10 @@ func EvaluateConfig(config *blocks.Config, vc *govultr.Client) error {
 			if err != nil {
 				return err
 			}
+			err = AddBlockToEvalContext(evalCtx, b)
+			if err != nil {
+				return err
+			}
 			fmt.Println("Evaluation context:", evalCtx.Variables["data"].GoString())
 
 		case *blocks.SSHKeyBlock,
@@ -213,9 +218,75 @@ func EvaluateConfig(config *blocks.Config, vc *govultr.Client) error {
 			if err != nil {
 				return err
 			}
+			err = AddBlockToEvalContext(evalCtx, b)
+			if err != nil {
+				return err
+			}
+			fmt.Println("Evaluation context:", evalCtx.Variables[string(b.BlockType())].GoString())
 		default:
 			return fmt.Errorf("unknown block type %T", node)
 		}
+	}
+
+	return nil
+}
+
+func AddBlockToEvalContext(evalCtx *hcl.EvalContext, block blocks.Block) error {
+	data, ok := evalCtx.Variables["data"]
+	if !ok {
+		return fmt.Errorf("data block not found in evaluation context")
+	}
+
+	switch block.BlockType() {
+	case blocks.RegionBlockType,
+		blocks.OSBlockType,
+		blocks.PlanBlockType:
+		dataMap := data.AsValueMap()
+		// Check if the blockTypeVal key exists in dataVars
+		fmt.Println("block.BlockType():", block.BlockType(), "block.BlockName():", block.BlockName())
+		if blockCtyVal := data.GetAttr(string(block.BlockType())); !blockCtyVal.IsNull() {
+			// Get the map of blocks
+			var blockMap map[string]cty.Value
+			// Convert the block to a cty.Value
+			blockVal, err := block.ToCtyValue()
+			if err != nil {
+				return err
+			}
+
+			if blockCtyVal.Equals(cty.EmptyObjectVal).True() {
+				blockMap = make(map[string]cty.Value)
+			} else {
+				blockMap = blockCtyVal.AsValueMap()
+			}
+			// Add the block to the region map
+			blockMap[block.BlockName()] = blockVal
+			// Set the data key to the updated data
+			dataMap[string(block.BlockType())] = cty.ObjectVal(blockMap)
+			evalCtx.Variables["data"] = cty.ObjectVal(dataMap)
+		}
+	case blocks.InstanceBlockType,
+		blocks.SSHKeyBlockType,
+		blocks.StartupScriptBlockType:
+		// Get the map of blocks
+		var blockMap map[string]cty.Value
+		// Convert the block to a cty.Value
+		blockVal, err := block.ToCtyValue()
+		if err != nil {
+			return err
+		}
+
+		blockCtyVal := evalCtx.Variables[string(block.BlockType())]
+		if blockCtyVal.Equals(cty.EmptyObjectVal).True() {
+			blockMap = make(map[string]cty.Value)
+		} else {
+			blockMap = blockCtyVal.AsValueMap()
+		}
+		// Add the block to the region map
+		blockMap[block.BlockName()] = blockVal
+		evalCtx.Variables[string(block.BlockType())] = cty.ObjectVal(blockMap)
+
+	default:
+		return fmt.Errorf("block type %s not supported", block.BlockType())
 	}
 
 	return nil

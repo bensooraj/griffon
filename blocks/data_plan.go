@@ -99,26 +99,7 @@ func (p *PlanDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *g
 		return nil, ErrorDataNotFound
 	}
 
-	// Update the evaluation context variables
-	newEvalCtx := evalCtx.NewChild()
-	newEvalCtx.Variables = map[string]cty.Value{
-		"data": cty.ObjectVal(map[string]cty.Value{
-			"plan": cty.ObjectVal(map[string]cty.Value{
-				p.Name: cty.ObjectVal(map[string]cty.Value{
-					"id":           cty.StringVal(p.VID),
-					"vcpu_count":   cty.NumberIntVal(int64(p.VCPUCount)),
-					"ram":          cty.NumberIntVal(int64(p.RAM)),
-					"disk":         cty.NumberIntVal(int64(p.Disk)),
-					"disk_count":   cty.NumberIntVal(int64(p.DiskCount)),
-					"bandwidth":    cty.NumberIntVal(int64(p.Bandwidth)),
-					"monthly_cost": cty.NumberFloatVal(float64(p.MonthlyCost)),
-					"type":         cty.StringVal(p.PlanType),
-				}),
-			}),
-		}),
-	}
-
-	fmt.Printf("....(data.plan.%s) Evaluation context: %s\n", p.Name, evalCtx.Variables["data"].GoString())
+	fmt.Printf("\n....(data.plan.%s) Evaluation context: %s\n", p.Name, evalCtx.Variables["data"].GoString())
 
 	return nil, nil
 }

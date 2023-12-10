@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/vultr/govultr/v3"
-	"github.com/zclconf/go-cty/cty"
 	"go.uber.org/mock/gomock"
 )
 
@@ -377,69 +376,4 @@ func TestEvaluationContext(t *testing.T) {
 	fmt.Println("[AFTER] Instance:", evalCtx.Variables[string(blocks.InstanceBlockType)].GoString())
 
 	t.Fail()
-}
-
-func AddBlockToEvalContext(evalCtx *hcl.EvalContext, block blocks.Block) error {
-	data, ok := evalCtx.Variables["data"]
-	if !ok {
-		return fmt.Errorf("data block not found in evaluation context")
-	}
-	fmt.Println("[BEFORE] data:", data.GoString())
-
-	switch block.BlockType() {
-	case blocks.RegionBlockType,
-		blocks.OSBlockType,
-		blocks.PlanBlockType:
-		dataMap := data.AsValueMap()
-		fmt.Println("dataMap[`region`]: ", dataMap["region"])
-		// Check if the blockTypeVal key exists in dataVars
-		fmt.Println("block.BlockType():", block.BlockType(), "block.BlockName():", block.BlockName())
-		if blockCtyVal := data.GetAttr(string(block.BlockType())); !blockCtyVal.IsNull() {
-			// Get the map of blocks
-			var blockMap map[string]cty.Value
-			// Convert the block to a cty.Value
-			blockVal, err := block.ToCtyValue()
-			if err != nil {
-				return err
-			}
-
-			if blockCtyVal.Equals(cty.EmptyObjectVal).True() {
-				fmt.Println("2. blockTypeVal is empty", blockCtyVal.Type().FriendlyName())
-				blockMap = make(map[string]cty.Value)
-			} else {
-				fmt.Println("3. blockTypeVal is empty", blockCtyVal.Type().FriendlyName())
-				blockMap = blockCtyVal.AsValueMap()
-			}
-			// Add the block to the region map
-			blockMap[block.BlockName()] = blockVal
-			// Set the data key to the updated data
-			dataMap[string(block.BlockType())] = cty.ObjectVal(blockMap)
-			evalCtx.Variables["data"] = cty.ObjectVal(dataMap)
-		}
-	case blocks.InstanceBlockType,
-		blocks.SSHKeyBlockType,
-		blocks.StartupScriptBlockType:
-		// Get the map of blocks
-		var blockMap map[string]cty.Value
-		// Convert the block to a cty.Value
-		blockVal, err := block.ToCtyValue()
-		if err != nil {
-			return err
-		}
-
-		blockCtyVal := evalCtx.Variables[string(block.BlockType())]
-		if blockCtyVal.Equals(cty.EmptyObjectVal).True() {
-			blockMap = make(map[string]cty.Value)
-		} else {
-			blockMap = blockCtyVal.AsValueMap()
-		}
-		// Add the block to the region map
-		blockMap[block.BlockName()] = blockVal
-		evalCtx.Variables[string(block.BlockType())] = cty.ObjectVal(blockMap)
-
-	default:
-		return fmt.Errorf("block type %s not supported", block.BlockType())
-	}
-
-	return nil
 }
