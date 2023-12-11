@@ -19,9 +19,9 @@ type Block interface {
 	// Get Dependencies
 	Dependencies() []string
 	// Get the data block
-	Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) (*hcl.EvalContext, error)
+	Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error
 	// Create the block by making API calls
-	Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) (*hcl.EvalContext, error)
+	Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error
 	// ToCtyValue
 	ToCtyValue() (cty.Value, error)
 }

@@ -62,10 +62,10 @@ func (p *PlanDataBlock) ProcessConfiguration(evalCtx *hcl.EvalContext) error {
 }
 
 // Get
-func (p *PlanDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) (*hcl.EvalContext, error) {
+func (p *PlanDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
 	plans, meta, _, err := vc.Plan.List(ctx, p.filter.Type, &govultr.ListOptions{PerPage: 100})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	fmt.Println("PlanDataBlock::Get::meta:", meta)
 	found := false
@@ -96,12 +96,12 @@ func (p *PlanDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *g
 	}
 
 	if !found {
-		return nil, ErrorDataNotFound
+		return ErrorDataNotFound
 	}
 
 	fmt.Printf("\n....(data.plan.%s) Evaluation context: %s\n", p.Name, evalCtx.Variables["data"].GoString())
 
-	return nil, nil
+	return nil
 }
 
 // ToCtyValue

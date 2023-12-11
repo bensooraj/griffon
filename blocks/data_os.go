@@ -54,10 +54,10 @@ func (o *OSDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 }
 
 // Get
-func (o *OSDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) (*hcl.EvalContext, error) {
+func (o *OSDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
 	oss, _, _, err := vc.OS.List(ctx, &govultr.ListOptions{PerPage: 100})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	found := false
@@ -77,10 +77,10 @@ func (o *OSDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *gov
 		}
 	}
 	if !found {
-		return nil, ErrorDataNotFound
+		return ErrorDataNotFound
 	}
 
-	return nil, nil
+	return nil
 }
 
 // ToCtyValue

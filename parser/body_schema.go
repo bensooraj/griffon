@@ -200,7 +200,7 @@ func EvaluateConfig(config *blocks.Config, vc *govultr.Client) error {
 			*blocks.OSDataBlock,
 			*blocks.PlanDataBlock:
 			fmt.Println("Data:", b.BlockType(), b.BlockName())
-			_, err := b.Get(context.Background(), evalCtx, vc)
+			err := b.Get(context.Background(), evalCtx, vc)
 			if err != nil {
 				return err
 			}
@@ -214,7 +214,7 @@ func EvaluateConfig(config *blocks.Config, vc *govultr.Client) error {
 			*blocks.StartupScriptBlock,
 			*blocks.InstanceBlock:
 			fmt.Println("Resource:", b.BlockType(), b.BlockName())
-			_, err := b.Create(context.Background(), evalCtx, vc)
+			err := b.Create(context.Background(), evalCtx, vc)
 			if err != nil {
 				return err
 			}

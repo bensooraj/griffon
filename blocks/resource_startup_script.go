@@ -50,14 +50,14 @@ func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 	return nil
 }
 
-func (s *StartupScriptBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) (*hcl.EvalContext, error) {
+func (s *StartupScriptBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
 	fmt.Println("Creating startup script", s.Name)
 	ss, _, err := vc.StartupScript.Create(context.Background(), &govultr.StartupScriptReq{
 		Name:   s.Name,
 		Script: s.Script,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	s.VID = ss.ID
@@ -65,7 +65,7 @@ func (s *StartupScriptBlock) Create(ctx context.Context, evalCtx *hcl.EvalContex
 	s.VDateModified = ss.DateModified
 	s.VType = ss.Type
 
-	return nil, nil
+	return nil
 }
 
 // ToCtyValue
