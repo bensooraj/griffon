@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
@@ -17,7 +16,7 @@ type InstanceBlock struct {
 	Region          string   `hcl:"region,attr" json:"region,omitempty"`
 	Plan            string   `hcl:"plan,attr" json:"plan,omitempty"`
 	OsID            int      `hcl:"os_id,attr" json:"os_id,omitempty"`
-	SshKeyID        string   `hcl:"ssh_key_id,attr" json:"sshkey_id,omitempty"`
+	SshKeyID        string   `hcl:"sshkey_id,attr" json:"sshkey_id,omitempty"`
 	StartupScriptID string   `hcl:"script_id,attr" json:"script_id,omitempty"`
 	Hostname        string   `hcl:"hostname,attr" json:"hostname"`
 	Tags            []string `hcl:"tag,attr" json:"tags"`
@@ -60,16 +59,13 @@ func (i *InstanceBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 			i.Region = value.AsString()
 		case "plan":
 			i.Plan = value.AsString()
-		case "os":
-			osID, err := strconv.Atoi(value.AsString())
-			if err != nil {
-				return err
-			}
-			i.OsID = osID
-		case "ssh_key_id":
+		case "os_id":
+			osID, _ := value.AsBigFloat().Int64()
+			i.OsID = int(osID)
+		case "sshkey_id":
 			i.SshKeyID = value.AsString()
-		case "startup_script_id":
-
+		case "script_id":
+			i.StartupScriptID = value.AsString()
 		case "hostname":
 			i.Hostname = value.AsString()
 		case "tag":

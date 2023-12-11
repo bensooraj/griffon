@@ -169,10 +169,11 @@ func TestParseWithBodySchema(t *testing.T) {
 	require.Equalf(t, expectedOSDataBlock.Family, actualOSDataBlock.Family, "OSDataBlock Family incorrect")
 
 	// SSHKeyBlock
-	expectedSSHKeyBlock := blocks.SSHKeyBlock{SSHKey: "ssh-rsa AAAAB3NzaC1yc2E", ResourceBlock: blocks.ResourceBlock{Name: "my_key", Type: blocks.SSHKeyBlockType}}
+	expectedSSHKeyBlock := blocks.SSHKeyBlock{VID: "cb676a46-66fd-4dfb-b839-443f2e6c0b60", SSHKey: "ssh-rsa AAAAB3NzaC1yc2E", ResourceBlock: blocks.ResourceBlock{Name: "my_key", Type: blocks.SSHKeyBlockType}}
 	actualSSHKeyBlock := config.Resources[blocks.SSHKeyBlockType]["my_key"].(*blocks.SSHKeyBlock)
 	require.Equalf(t, blocks.SSHKeyBlockType, actualSSHKeyBlock.BlockType(), "SSHKeyBlock BlockType() incorrect")
 	require.Equalf(t, expectedSSHKeyBlock.Name, actualSSHKeyBlock.BlockName(), "SSHKeyBlock BlockName() incorrect")
+	require.Equalf(t, expectedSSHKeyBlock.VID, actualSSHKeyBlock.VID, "SSHKeyBlock VID incorrect")
 	require.Equalf(t, expectedSSHKeyBlock.SSHKey, actualSSHKeyBlock.SSHKey, "SSHKeyBlock SSHKey incorrect")
 
 	// StartupScriptBlock
@@ -185,6 +186,32 @@ func TestParseWithBodySchema(t *testing.T) {
 	require.Equalf(t, expectedStartupScriptBlock.VDateModified, actualStartupScriptBlock.VDateModified, "StartupScriptBlock VDateModified incorrect")
 	require.Equalf(t, expectedStartupScriptBlock.VType, actualStartupScriptBlock.VType, "StartupScriptBlock VType incorrect")
 	require.Equalf(t, expectedStartupScriptBlock.Script, actualStartupScriptBlock.Script, "StartupScriptBlock Script incorrect")
+
+	// InstanceBlock
+	expectedInstanceBlock := blocks.InstanceBlock{
+		VID:             "4f0f12e5-1f84-404f-aa84-85f431ea5ec2",
+		OsID:            expectedOSDataBlock.VID,
+		Region:          expectedRegionDataBlock.VID,
+		Plan:            expectedPlanDataBlock.VID,
+		SshKeyID:        expectedSSHKeyBlock.VID,
+		StartupScriptID: expectedStartupScriptBlock.VID,
+		Os:              "CentOS 7 x64",
+		RAM:             1024,
+		Disk:            25,
+		VCPUCount:       1,
+		Status:          "pending",
+		ResourceBlock:   blocks.ResourceBlock{Name: "my_vps", Type: blocks.InstanceBlockType},
+	}
+	actualInstanceBlock := config.Resources[blocks.InstanceBlockType]["my_vps"].(*blocks.InstanceBlock)
+	require.Equalf(t, blocks.InstanceBlockType, actualInstanceBlock.BlockType(), "InstanceBlock BlockType() incorrect")
+	require.Equalf(t, expectedInstanceBlock.Name, actualInstanceBlock.BlockName(), "InstanceBlock BlockName() incorrect")
+	require.Equalf(t, expectedInstanceBlock.VID, actualInstanceBlock.VID, "InstanceBlock VID incorrect")
+	require.Equalf(t, expectedInstanceBlock.Os, actualInstanceBlock.Os, "InstanceBlock Os incorrect")
+	require.Equalf(t, expectedInstanceBlock.OsID, actualInstanceBlock.OsID, "InstanceBlock OsID incorrect")
+	require.Equalf(t, expectedInstanceBlock.Region, actualInstanceBlock.Region, "InstanceBlock Region incorrect")
+	require.Equalf(t, expectedInstanceBlock.Plan, actualInstanceBlock.Plan, "InstanceBlock Plan incorrect")
+	require.Equalf(t, expectedInstanceBlock.SshKeyID, actualInstanceBlock.SshKeyID, "InstanceBlock SshKeyID incorrect")
+	require.Equalf(t, expectedInstanceBlock.StartupScriptID, actualInstanceBlock.StartupScriptID, "InstanceBlock StartupScriptID incorrect")
 }
 
 func TestEvaluateConfig(t *testing.T) {
@@ -407,7 +434,7 @@ func setupMockVultrClient(t *testing.T, ctrl *gomock.Controller) *govultr.Client
 		ID:               "4f0f12e5-1f84-404f-aa84-85f431ea5ec2",
 		Region:           "ams",
 		Plan:             "vc2-1c-1gb",
-		Os:               "CentOS 8 Stream",
+		Os:               "CentOS 7 x64",
 		OsID:             362,
 		RAM:              1024,
 		Disk:             25,
