@@ -5,7 +5,7 @@ griffon {
 
 data "region" "current" {}
 
-data "plan" "all" {
+data "plan" "vhf_32gb" {
     filter {
         type = "all"
         region = data.region.current.id
@@ -27,7 +27,7 @@ data "os" "centos" {
 
 ssh_key "my_key" {
     ssh_key = "ssh-rsa AAAAB3NzaC1yc2E"
-    depends_on = [data.plan.all]
+    depends_on = [data.plan.vhf_32gb]
 }
 
 startup_script "my_script" {
@@ -37,7 +37,7 @@ startup_script "my_script" {
 
 instance "my_vps" {
     region = data.region.current.id
-    plan = data.plan.all.id
+    plan = data.plan.vhf_32gb.id
     os_id = data.os.centos.id
 
     sshkey_id = ssh_key.my_key.id
@@ -51,5 +51,5 @@ instance "my_vps" {
         env = "dev"
     }
 
-    depends_on = [data.region.current, data.plan.all, data.os.centos, ssh_key.my_key, startup_script.my_script]
+    depends_on = [data.region.current, data.plan.vhf_32gb, data.os.centos, ssh_key.my_key, startup_script.my_script]
 }

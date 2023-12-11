@@ -108,7 +108,7 @@ func TestBodySchemaParser(t *testing.T) {
 	}
 }
 
-func TestAPICall(t *testing.T) {
+func TestParseWithBodySchema(t *testing.T) {
 	t.Setenv("VULTR_API_KEY", "AxDfCdASdFzzxserDFWSD")
 
 	defer t.Cleanup(func() {
@@ -128,18 +128,42 @@ func TestAPICall(t *testing.T) {
 	config, err := ParseWithBodySchema("testdata/test1.hcl", b, GetEvalContext(), mockVultr)
 	require.NoError(t, err)
 
-	// check if the parsed config is correct
+	// GriffonBlock
 	require.Equalf(
 		t,
-		blocks.GriffonBlock{Region: "us-east-1", VultrAPIKey: "AxDfCdASdFzzxserDFWSD"},
+		blocks.GriffonBlock{Region: "ams", VultrAPIKey: "AxDfCdASdFzzxserDFWSD"},
 		config.Griffon,
 		"GriffonBlock parsed incorrectly",
 	)
 
 	t.Logf("config.Resources: %+v", config.Resources)
-	expectedSSHKeyBlock := blocks.SSHKeyBlock{SSHKey: "ssh-rsa AAAAB3NzaC1yc2E", ResourceBlock: blocks.ResourceBlock{Name: "my_key", Type: "ssh_key"}}
-	require.Equalf(t, expectedSSHKeyBlock, config.Resources[blocks.SSHKeyBlockType]["my_key"], "SSHKeyBlock parsed incorrectly")
 
+	// RegionDataBlock
+	expectedRegionDataBlock := blocks.RegionDataBlock{VID: "ams", City: "Amsterdam", Country: "NL", Continent: "Europe", DataBlock: blocks.DataBlock{Type: blocks.RegionBlockType, Name: "current"}}
+	actualRegionDataBlock := config.Data[blocks.RegionBlockType]["current"].(*blocks.RegionDataBlock)
+	require.Equalf(t, blocks.RegionBlockType, actualRegionDataBlock.BlockType(), "RegionDataBlock BlockType() incorrect")
+	require.Equalf(t, expectedRegionDataBlock.Name, actualRegionDataBlock.BlockName(), "RegionDataBlock BlockName() incorrect")
+	require.Equalf(t, expectedRegionDataBlock.VID, actualRegionDataBlock.VID, "RegionDataBlock VID incorrect")
+	require.Equalf(t, expectedRegionDataBlock.City, actualRegionDataBlock.City, "RegionDataBlock City incorrect")
+	require.Equalf(t, expectedRegionDataBlock.Country, actualRegionDataBlock.Country, "RegionDataBlock Country incorrect")
+	require.Equalf(t, expectedRegionDataBlock.Continent, actualRegionDataBlock.Continent, "RegionDataBlock Continent incorrect")
+
+	// PlanDataBlock
+	expectedPlanDataBlock := blocks.PlanDataBlock{VID: "vhf-8c-32gb", VCPUCount: 8, RAM: 32768, Disk: 512, DiskCount: 1, Bandwidth: 6144, MonthlyCost: 192, PlanType: "vhf", DataBlock: blocks.DataBlock{Type: blocks.PlanBlockType, Name: "vhf_32gb"}}
+	actualPlanDataBlock := config.Data[blocks.PlanBlockType]["vhf_32gb"].(*blocks.PlanDataBlock)
+	require.Equalf(t, blocks.PlanBlockType, actualPlanDataBlock.BlockType(), "PlanDataBlock BlockType() incorrect")
+	require.Equalf(t, expectedPlanDataBlock.Name, actualPlanDataBlock.BlockName(), "PlanDataBlock BlockName() incorrect")
+	require.Equalf(t, expectedPlanDataBlock.VID, actualPlanDataBlock.VID, "PlanDataBlock VID incorrect")
+	require.Equalf(t, expectedPlanDataBlock.VCPUCount, actualPlanDataBlock.VCPUCount, "PlanDataBlock VCPUCount incorrect")
+	require.Equalf(t, expectedPlanDataBlock.RAM, actualPlanDataBlock.RAM, "PlanDataBlock RAM incorrect")
+	require.Equalf(t, expectedPlanDataBlock.Disk, actualPlanDataBlock.Disk, "PlanDataBlock Disk incorrect")
+
+	// SSHKeyBlock
+	expectedSSHKeyBlock := blocks.SSHKeyBlock{SSHKey: "ssh-rsa AAAAB3NzaC1yc2E", ResourceBlock: blocks.ResourceBlock{Name: "my_key", Type: blocks.SSHKeyBlockType}}
+	actualSSHKeyBlock := config.Resources[blocks.SSHKeyBlockType]["my_key"].(*blocks.SSHKeyBlock)
+	require.Equalf(t, blocks.SSHKeyBlockType, actualSSHKeyBlock.BlockType(), "SSHKeyBlock BlockType() incorrect")
+	require.Equalf(t, expectedSSHKeyBlock.Name, actualSSHKeyBlock.BlockName(), "SSHKeyBlock BlockName() incorrect")
+	require.Equalf(t, expectedSSHKeyBlock.SSHKey, actualSSHKeyBlock.SSHKey, "SSHKeyBlock SSHKey incorrect")
 }
 
 func TestEvaluateConfig(t *testing.T) {
@@ -177,95 +201,6 @@ func TestEvaluateConfig(t *testing.T) {
 			}
 		})
 	}
-}
-
-func setupMockVultrClient(t *testing.T, ctrl *gomock.Controller) *govultr.Client {
-	t.Helper()
-
-	mockVultr := mocks.NewMockVultrClient(ctrl)
-
-	// 1. Data
-	// 1.1 Regions
-	mockRegionService := mocks.NewMockRegionService(ctrl)
-	mockRegionService.EXPECT().List(gomock.Any(), gomock.Any()).Return([]govultr.Region{
-		{
-			ID:        "ams",
-			City:      "Amsterdam",
-			Country:   "NL",
-			Continent: "Europe",
-			Options:   []string{"ddos_protection", "block_storage_high_perf", "block_storage_storage_opt", "kubernetes", "load_balancers"},
-		},
-	}, &govultr.Meta{}, &http.Response{}, nil).AnyTimes()
-	mockVultr.Region = mockRegionService
-	// 1.2 OS
-	mockOSService := mocks.NewMockOSService(ctrl)
-	mockOSService.EXPECT().List(gomock.Any(), gomock.Any()).Return([]govultr.OS{}, &govultr.Meta{}, &http.Response{}, nil).AnyTimes()
-	mockVultr.OS = mockOSService
-	// 1.3 Plans
-	mockPlanService := mocks.NewMockPlanService(ctrl)
-	mockPlanService.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return([]govultr.Plan{
-		{
-			ID:          "vhf-8c-32gb",
-			VCPUCount:   8,
-			RAM:         32768,
-			Disk:        512,
-			DiskCount:   1,
-			Bandwidth:   6144,
-			MonthlyCost: 192,
-			Type:        "vhf",
-			Locations:   []string{"ams", "atl", "dfw", "fra", "hnd", "lax", "lhr", "mia", "nrt", "ord", "sea", "sgp", "sjc", "syd", "tor"},
-		},
-	}, &govultr.Meta{}, &http.Response{}, nil).AnyTimes()
-	mockVultr.Plan = mockPlanService
-
-	// 2. Resources
-	// 2.1 Instance
-	mockStartupScriptService := mocks.NewMockStartupScriptService(ctrl)
-	mockStartupScriptService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&govultr.StartupScript{
-		ID:           "cb676a46-66fd-4dfb-b839-443f2e6c0b60",
-		DateCreated:  "2020-10-10T01:56:20+00:00",
-		DateModified: "2020-10-10T01:59:20+00:00",
-		Name:         "my_key",
-		Type:         "pxe",
-		Script:       "ssh-rsa AAAAB3NzaC1yc2E",
-	}, &http.Response{}, nil).AnyTimes()
-	mockVultr.StartupScript = mockStartupScriptService
-	// 2.2 SSHKey
-	mockSSHKeyService := mocks.NewMockSSHKeyService(ctrl)
-	mockSSHKeyService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&govultr.SSHKey{
-		ID:          "cb676a46-66fd-4dfb-b839-443f2e6c0b60",
-		Name:        "my_key",
-		SSHKey:      "ssh-rsa AAAAB3NzaC1yc2E",
-		DateCreated: "2020-10-10T01:56:20+00:00",
-	}, &http.Response{}, nil).AnyTimes()
-	mockVultr.SSHKey = mockSSHKeyService
-	// 2.3 Instance
-	mockInstanceService := mocks.NewMockInstanceService(ctrl)
-	mockInstanceService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&govultr.Instance{
-		ID:               "4f0f12e5-1f84-404f-aa84-85f431ea5ec2",
-		Region:           "ams",
-		Plan:             "vc2-1c-1gb",
-		Os:               "CentOS 8 Stream",
-		OsID:             362,
-		RAM:              1024,
-		Disk:             25,
-		MainIP:           "",
-		VCPUCount:        1,
-		DateCreated:      "2020-10-10T01:56:20+00:00",
-		Status:           "pending",
-		AllowedBandwidth: 1000,
-		DefaultPassword:  "v5{Fkvb#2ycPGwHs",
-		NetmaskV4:        "",
-		GatewayV4:        "0.0.0.0",
-		PowerStatus:      "running",
-		ServerStatus:     "ok",
-		Tags: []string{
-			"tag1",
-		},
-	}, &http.Response{}, nil).AnyTimes()
-	mockVultr.Instance = mockInstanceService
-
-	return mockVultr
 }
 
 func TestEvaluationContext(t *testing.T) {
@@ -376,4 +311,93 @@ func TestEvaluationContext(t *testing.T) {
 	fmt.Println("[AFTER] Instance:", evalCtx.Variables[string(blocks.InstanceBlockType)].GoString())
 
 	t.Fail()
+}
+
+func setupMockVultrClient(t *testing.T, ctrl *gomock.Controller) *govultr.Client {
+	t.Helper()
+
+	mockVultr := mocks.NewMockVultrClient(ctrl)
+
+	// 1. Data
+	// 1.1 Regions
+	mockRegionService := mocks.NewMockRegionService(ctrl)
+	mockRegionService.EXPECT().List(gomock.Any(), gomock.Any()).Return([]govultr.Region{
+		{
+			ID:        "ams",
+			City:      "Amsterdam",
+			Country:   "NL",
+			Continent: "Europe",
+			Options:   []string{"ddos_protection", "block_storage_high_perf", "block_storage_storage_opt", "kubernetes", "load_balancers"},
+		},
+	}, &govultr.Meta{}, &http.Response{}, nil).AnyTimes()
+	mockVultr.Region = mockRegionService
+	// 1.2 OS
+	mockOSService := mocks.NewMockOSService(ctrl)
+	mockOSService.EXPECT().List(gomock.Any(), gomock.Any()).Return([]govultr.OS{}, &govultr.Meta{}, &http.Response{}, nil).AnyTimes()
+	mockVultr.OS = mockOSService
+	// 1.3 Plans
+	mockPlanService := mocks.NewMockPlanService(ctrl)
+	mockPlanService.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return([]govultr.Plan{
+		{
+			ID:          "vhf-8c-32gb",
+			VCPUCount:   8,
+			RAM:         32768,
+			Disk:        512,
+			DiskCount:   1,
+			Bandwidth:   6144,
+			MonthlyCost: 192,
+			Type:        "vhf",
+			Locations:   []string{"ams", "atl", "dfw", "fra", "hnd", "lax", "lhr", "mia", "nrt", "ord", "sea", "sgp", "sjc", "syd", "tor"},
+		},
+	}, &govultr.Meta{}, &http.Response{}, nil).AnyTimes()
+	mockVultr.Plan = mockPlanService
+
+	// 2. Resources
+	// 2.1 Instance
+	mockStartupScriptService := mocks.NewMockStartupScriptService(ctrl)
+	mockStartupScriptService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&govultr.StartupScript{
+		ID:           "cb676a46-66fd-4dfb-b839-443f2e6c0b60",
+		DateCreated:  "2020-10-10T01:56:20+00:00",
+		DateModified: "2020-10-10T01:59:20+00:00",
+		Name:         "my_key",
+		Type:         "pxe",
+		Script:       "ssh-rsa AAAAB3NzaC1yc2E",
+	}, &http.Response{}, nil).AnyTimes()
+	mockVultr.StartupScript = mockStartupScriptService
+	// 2.2 SSHKey
+	mockSSHKeyService := mocks.NewMockSSHKeyService(ctrl)
+	mockSSHKeyService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&govultr.SSHKey{
+		ID:          "cb676a46-66fd-4dfb-b839-443f2e6c0b60",
+		Name:        "my_key",
+		SSHKey:      "ssh-rsa AAAAB3NzaC1yc2E",
+		DateCreated: "2020-10-10T01:56:20+00:00",
+	}, &http.Response{}, nil).AnyTimes()
+	mockVultr.SSHKey = mockSSHKeyService
+	// 2.3 Instance
+	mockInstanceService := mocks.NewMockInstanceService(ctrl)
+	mockInstanceService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&govultr.Instance{
+		ID:               "4f0f12e5-1f84-404f-aa84-85f431ea5ec2",
+		Region:           "ams",
+		Plan:             "vc2-1c-1gb",
+		Os:               "CentOS 8 Stream",
+		OsID:             362,
+		RAM:              1024,
+		Disk:             25,
+		MainIP:           "",
+		VCPUCount:        1,
+		DateCreated:      "2020-10-10T01:56:20+00:00",
+		Status:           "pending",
+		AllowedBandwidth: 1000,
+		DefaultPassword:  "v5{Fkvb#2ycPGwHs",
+		NetmaskV4:        "",
+		GatewayV4:        "0.0.0.0",
+		PowerStatus:      "running",
+		ServerStatus:     "ok",
+		Tags: []string{
+			"tag1",
+		},
+	}, &http.Response{}, nil).AnyTimes()
+	mockVultr.Instance = mockInstanceService
+
+	return mockVultr
 }
