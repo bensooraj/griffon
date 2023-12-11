@@ -3,7 +3,7 @@ package blocks
 import (
 	"context"
 	"errors"
-	"fmt"
+	"strings"
 
 	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
@@ -17,6 +17,7 @@ type OSDataBlock struct {
 	OSName string `json:"name" cty:"name"`
 	Arch   string `json:"arch" cty:"arch"`
 	Family string `json:"family" cty:"family"`
+	filter schema.OSFilterBlock
 	DataBlock
 }
 
@@ -48,12 +49,37 @@ func (o *OSDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 			osf.Family = value.AsString()
 		}
 	}
-	fmt.Printf("filter: %+v\n", osf)
+	o.filter = osf
 	return nil
 }
 
 // Get
 func (o *OSDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) (*hcl.EvalContext, error) {
+	oss, _, _, err := vc.OS.List(ctx, &govultr.ListOptions{PerPage: 100})
+	if err != nil {
+		return nil, err
+	}
+
+	found := false
+
+	for _, os := range oss {
+		if os.Family == o.filter.Family &&
+			os.Arch == o.filter.Arch &&
+			strings.Contains(os.Name, o.filter.Name) {
+			found = true
+			o.OSName = os.Name
+			o.VID = os.ID
+			o.Arch = os.Arch
+			o.Family = os.Family
+
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, ErrorDataNotFound
+	}
+
 	return nil, nil
 }
 

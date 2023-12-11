@@ -158,6 +158,16 @@ func TestParseWithBodySchema(t *testing.T) {
 	require.Equalf(t, expectedPlanDataBlock.RAM, actualPlanDataBlock.RAM, "PlanDataBlock RAM incorrect")
 	require.Equalf(t, expectedPlanDataBlock.Disk, actualPlanDataBlock.Disk, "PlanDataBlock Disk incorrect")
 
+	// OSDataBlock
+	expectedOSDataBlock := blocks.OSDataBlock{VID: 362, OSName: "CentOS 7 x64", Arch: "x64", Family: "centos", DataBlock: blocks.DataBlock{Type: blocks.OSBlockType, Name: "centos_7"}}
+	actualOSDataBlock := config.Data[blocks.OSBlockType]["centos_7"].(*blocks.OSDataBlock)
+	require.Equalf(t, blocks.OSBlockType, actualOSDataBlock.BlockType(), "OSDataBlock BlockType() incorrect")
+	require.Equalf(t, expectedOSDataBlock.Name, actualOSDataBlock.BlockName(), "OSDataBlock BlockName() incorrect")
+	require.Equalf(t, expectedOSDataBlock.VID, actualOSDataBlock.VID, "OSDataBlock VID incorrect")
+	require.Equalf(t, expectedOSDataBlock.OSName, actualOSDataBlock.OSName, "OSDataBlock OSName incorrect")
+	require.Equalf(t, expectedOSDataBlock.Arch, actualOSDataBlock.Arch, "OSDataBlock Arch incorrect")
+	require.Equalf(t, expectedOSDataBlock.Family, actualOSDataBlock.Family, "OSDataBlock Family incorrect")
+
 	// SSHKeyBlock
 	expectedSSHKeyBlock := blocks.SSHKeyBlock{SSHKey: "ssh-rsa AAAAB3NzaC1yc2E", ResourceBlock: blocks.ResourceBlock{Name: "my_key", Type: blocks.SSHKeyBlockType}}
 	actualSSHKeyBlock := config.Resources[blocks.SSHKeyBlockType]["my_key"].(*blocks.SSHKeyBlock)
@@ -333,7 +343,14 @@ func setupMockVultrClient(t *testing.T, ctrl *gomock.Controller) *govultr.Client
 	mockVultr.Region = mockRegionService
 	// 1.2 OS
 	mockOSService := mocks.NewMockOSService(ctrl)
-	mockOSService.EXPECT().List(gomock.Any(), gomock.Any()).Return([]govultr.OS{}, &govultr.Meta{}, &http.Response{}, nil).AnyTimes()
+	mockOSService.EXPECT().List(gomock.Any(), gomock.Any()).Return([]govultr.OS{
+		{
+			ID:     362,
+			Name:   "CentOS 7 x64",
+			Arch:   "x64",
+			Family: "centos",
+		},
+	}, &govultr.Meta{}, &http.Response{}, nil).AnyTimes()
 	mockVultr.OS = mockOSService
 	// 1.3 Plans
 	mockPlanService := mocks.NewMockPlanService(ctrl)
