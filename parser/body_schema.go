@@ -16,7 +16,7 @@ import (
 	"gonum.org/v1/gonum/graph/encoding/dot"
 )
 
-func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *govultr.Client) (*blocks.Config, error) {
+func ParseWithBodySchema(filename string, src []byte, evalCtx *hcl.EvalContext, vc *govultr.Client) (*blocks.Config, error) {
 	config := blocks.Config{
 		Griffon:   blocks.GriffonBlock{},
 		Data:      make(map[blocks.BlockType]map[string]blocks.Block),
@@ -48,7 +48,7 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 				return nil, errors.New("only one griffon block allowed")
 			}
 			var griffon blocks.GriffonBlock
-			if err := griffon.PreProcessHCLBlock(hclBlocks[0], ctx); err != nil {
+			if err := griffon.PreProcessHCLBlock(hclBlocks[0], evalCtx); err != nil {
 				return nil, err
 			}
 			griffon.GraphID = 0
@@ -58,7 +58,7 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 				var sshKey blocks.SSHKeyBlock
 				sshKey.Name = hclBlock.Labels[0]
 
-				if err := sshKey.PreProcessHCLBlock(hclBlock, ctx); err != nil {
+				if err := sshKey.PreProcessHCLBlock(hclBlock, evalCtx); err != nil {
 					return nil, err
 				}
 				dGraphNodeCount++
@@ -71,7 +71,7 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 				var startupScript blocks.StartupScriptBlock
 				startupScript.Name = hclBlock.Labels[0]
 
-				if err := startupScript.PreProcessHCLBlock(hclBlock, ctx); err != nil {
+				if err := startupScript.PreProcessHCLBlock(hclBlock, evalCtx); err != nil {
 					return nil, err
 				}
 				dGraphNodeCount++
@@ -84,7 +84,7 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 				var instance blocks.InstanceBlock
 				instance.Name = hclBlock.Labels[0]
 
-				if err := instance.PreProcessHCLBlock(hclBlock, ctx); err != nil {
+				if err := instance.PreProcessHCLBlock(hclBlock, evalCtx); err != nil {
 					return nil, err
 				}
 				dGraphNodeCount++
@@ -104,21 +104,21 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 				switch dataBlock.Type {
 				case "region":
 					regionData := blocks.RegionDataBlock{DataBlock: dataBlock}
-					if err := regionData.PreProcessHCLBlock(hclBlock, ctx); err != nil {
+					if err := regionData.PreProcessHCLBlock(hclBlock, evalCtx); err != nil {
 						return nil, err
 					}
 
 					config.AddData(&regionData)
 				case "plan":
 					planData := blocks.PlanDataBlock{DataBlock: dataBlock}
-					if err := planData.PreProcessHCLBlock(hclBlock, ctx); err != nil {
+					if err := planData.PreProcessHCLBlock(hclBlock, evalCtx); err != nil {
 						return nil, err
 					}
 
 					config.AddData(&planData)
 				case "os":
 					osData := blocks.OSDataBlock{DataBlock: dataBlock}
-					if err := osData.PreProcessHCLBlock(hclBlock, ctx); err != nil {
+					if err := osData.PreProcessHCLBlock(hclBlock, evalCtx); err != nil {
 						return nil, err
 					}
 
@@ -133,7 +133,7 @@ func ParseWithBodySchema(filename string, src []byte, ctx *hcl.EvalContext, vc *
 	}
 	fmt.Println()
 
-	err := EvaluateConfig(&config, vc)
+	err := EvaluateConfig(evalCtx, &config, vc)
 	if err != nil {
 		fmt.Println("Error evaluating config:", err)
 	}
@@ -176,13 +176,11 @@ func CalculateEvaluationOrder(config *blocks.Config) (*graph.DependencyGraph, er
 	return dependencyGraph, nil
 }
 
-func EvaluateConfig(config *blocks.Config, vc *govultr.Client) error {
+func EvaluateConfig(evalCtx *hcl.EvalContext, config *blocks.Config, vc *govultr.Client) error {
 	dependencyGraph, err := CalculateEvaluationOrder(config)
 	if err != nil {
 		return err
 	}
-
-	evalCtx := GetEvalContext()
 
 	for _, nodeID := range config.EvaluationOrder {
 		node := dependencyGraph.Node(nodeID).(blocks.Block)
