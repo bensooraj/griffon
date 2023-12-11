@@ -2,6 +2,7 @@ package blocks
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 
@@ -40,7 +41,8 @@ func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 
 		switch attrName {
 		case "script":
-			s.Script = value.AsString()
+			fmt.Println("script:", value.AsString())
+			s.Script = base64.StdEncoding.EncodeToString([]byte(value.AsString()))
 		default:
 			return errors.New("unknown attribute " + attrName)
 		}

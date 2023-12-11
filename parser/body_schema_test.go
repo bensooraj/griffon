@@ -174,6 +174,17 @@ func TestParseWithBodySchema(t *testing.T) {
 	require.Equalf(t, blocks.SSHKeyBlockType, actualSSHKeyBlock.BlockType(), "SSHKeyBlock BlockType() incorrect")
 	require.Equalf(t, expectedSSHKeyBlock.Name, actualSSHKeyBlock.BlockName(), "SSHKeyBlock BlockName() incorrect")
 	require.Equalf(t, expectedSSHKeyBlock.SSHKey, actualSSHKeyBlock.SSHKey, "SSHKeyBlock SSHKey incorrect")
+
+	// StartupScriptBlock
+	expectedStartupScriptBlock := blocks.StartupScriptBlock{Script: "IyEvYmluL2Jhc2gKZWNobyAnaGVsbG8gd29ybGQn", VID: "cb676a46-66fd-4dfb-b839-443f2e6c0b60", VDateCreated: "2020-10-10T01:56:20+00:00", VDateModified: "2020-10-10T01:59:20+00:00", VType: "pxe", ResourceBlock: blocks.ResourceBlock{Name: "my_script", Type: blocks.StartupScriptBlockType}}
+	actualStartupScriptBlock := config.Resources[blocks.StartupScriptBlockType]["my_script"].(*blocks.StartupScriptBlock)
+	require.Equalf(t, blocks.StartupScriptBlockType, actualStartupScriptBlock.BlockType(), "StartupScriptBlock BlockType() incorrect")
+	require.Equalf(t, expectedStartupScriptBlock.Name, actualStartupScriptBlock.BlockName(), "StartupScriptBlock BlockName() incorrect")
+	require.Equalf(t, expectedStartupScriptBlock.VID, actualStartupScriptBlock.VID, "StartupScriptBlock VID incorrect")
+	require.Equalf(t, expectedStartupScriptBlock.VDateCreated, actualStartupScriptBlock.VDateCreated, "StartupScriptBlock VDateCreated incorrect")
+	require.Equalf(t, expectedStartupScriptBlock.VDateModified, actualStartupScriptBlock.VDateModified, "StartupScriptBlock VDateModified incorrect")
+	require.Equalf(t, expectedStartupScriptBlock.VType, actualStartupScriptBlock.VType, "StartupScriptBlock VType incorrect")
+	require.Equalf(t, expectedStartupScriptBlock.Script, actualStartupScriptBlock.Script, "StartupScriptBlock Script incorrect")
 }
 
 func TestEvaluateConfig(t *testing.T) {
