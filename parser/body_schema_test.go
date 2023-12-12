@@ -90,7 +90,7 @@ func TestBodySchemaParser(t *testing.T) {
 	evalCtx := GetEvalContext()
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			config, err := ParseWithBodySchema("test.hcl", tC.src, evalCtx, nil)
+			config, err := ParseWithBodySchema("test.hcl", tC.src, evalCtx)
 			if diag, ok := err.(hcl.Diagnostics); ok && diag.HasErrors() {
 				for i, diagErr := range diag.Errs() {
 					t.Log("HCL diagnostic error [", i, "]:", diagErr.Error())
@@ -118,14 +118,12 @@ func TestParseWithBodySchema(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockVultr := setupMockVultrClient(t, ctrl)
-
 	b, err := os.ReadFile("../testdata/test_1.hcl")
 	if err != nil {
 		panic(err)
 	}
 	// parse the file
-	config, err := ParseWithBodySchema("testdata/test1.hcl", b, GetEvalContext(), mockVultr)
+	config, err := ParseWithBodySchema("testdata/test1.hcl", b, GetEvalContext())
 	require.NoError(t, err)
 
 	// GriffonBlock

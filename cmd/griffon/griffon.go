@@ -5,7 +5,11 @@ import (
 	"log"
 	"os"
 
+	"github.com/bensooraj/griffon/blocks"
+	"github.com/bensooraj/griffon/parser"
+	"github.com/hashicorp/hcl/v2"
 	"github.com/urfave/cli/v2"
+	"github.com/vultr/govultr/v3"
 )
 
 func main() {
@@ -52,10 +56,32 @@ func main() {
 // CreateCommand
 func CreateCommand(c *cli.Context) error {
 	log.Println("create")
-	hclFile, err := os.ReadFile(c.String("file"))
+	filename := c.String("file")
+
+	// 1. Read the HCL file
+	hclFile, err := os.ReadFile(filename)
 	if err != nil {
 		return cli.Exit(fmt.Sprintf("Error reading file: %v", err), 1)
 	}
 	log.Println(string(hclFile))
+
+	// 2. Parse the HCL file and load the
+	var (
+		config  *blocks.Config
+		evalCtx *hcl.EvalContext = parser.GetEvalContext()
+		vc      *govultr.Client
+	)
+
+	config, err = parser.ParseWithBodySchema(filename, hclFile, evalCtx)
+	if err != nil {
+		return cli.Exit(fmt.Sprintf("Error parsing file and loading config: %v", err), 1)
+	}
+
+	// 3. Evaluate the config
+	err = parser.EvaluateConfig(evalCtx, config, vc)
+	if err != nil {
+		return cli.Exit(fmt.Sprintf("Error evaluating config: %v", err), 1)
+	}
+
 	return nil
 }

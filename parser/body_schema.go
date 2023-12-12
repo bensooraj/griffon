@@ -13,10 +13,11 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/vultr/govultr/v3"
 	"github.com/zclconf/go-cty/cty"
+	"golang.org/x/oauth2"
 	"gonum.org/v1/gonum/graph/encoding/dot"
 )
 
-func ParseWithBodySchema(filename string, src []byte, evalCtx *hcl.EvalContext, vc *govultr.Client) (*blocks.Config, error) {
+func ParseWithBodySchema(filename string, src []byte, evalCtx *hcl.EvalContext) (*blocks.Config, error) {
 	config := blocks.Config{
 		Griffon:   blocks.GriffonBlock{},
 		Data:      make(map[blocks.BlockType]map[string]blocks.Block),
@@ -133,11 +134,6 @@ func ParseWithBodySchema(filename string, src []byte, evalCtx *hcl.EvalContext, 
 	}
 	fmt.Println()
 
-	err := EvaluateConfig(evalCtx, &config, vc)
-	if err != nil {
-		fmt.Println("Error evaluating config:", err)
-	}
-
 	return &config, nil
 }
 
@@ -194,6 +190,18 @@ func EvaluateConfig(evalCtx *hcl.EvalContext, config *blocks.Config, vc *govultr
 		switch b := node.(type) {
 		case *blocks.GriffonBlock:
 			fmt.Println("GriffonBlock:", b.BlockType(), b.BlockName())
+			if b.VultrAPIKey == "" {
+				return fmt.Errorf("vultr_api_key is required")
+			}
+			oauthConfig := &oauth2.Config{}
+			tokenSource := oauthConfig.TokenSource(context.Background(), &oauth2.Token{AccessToken: b.VultrAPIKey})
+			vc = govultr.NewClient(oauth2.NewClient(context.Background(), tokenSource))
+
+			// Optional changes
+			_ = vc.SetBaseURL("https://api.vultr.com")
+			vc.SetUserAgent("mycool-app")
+			vc.SetRateLimit(500)
+
 		case *blocks.RegionDataBlock,
 			*blocks.OSDataBlock,
 			*blocks.PlanDataBlock:
