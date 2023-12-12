@@ -15,3 +15,6 @@ generate:
 # command to build this project
 build:
 	go build -o bin/ ./...
+
+griffon:
+	go build -o bin/griffon ./cmd/griffon
