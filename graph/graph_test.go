@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/bensooraj/griffon/blocks"
@@ -26,7 +25,6 @@ func TestNewGraph(t *testing.T) {
 	o6.GraphID = 6
 
 	for _, n := range []graph.Node{r1, r2, p3, p4, o5, o6} {
-		fmt.Println("adding node", n.ID())
 		_, new := g.NodeWithID(n.ID())
 		if new {
 			g.AddNode(n)

@@ -1,7 +1,7 @@
 package graph
 
 import (
-	"fmt"
+	"log/slog"
 
 	"github.com/bensooraj/griffon/blocks"
 	"gonum.org/v1/gonum/graph/simple"
@@ -23,20 +23,19 @@ func NewDependencyGraph() *DependencyGraph {
 func (dg *DependencyGraph) LoadGriffonConfig(config *blocks.Config) error {
 
 	// Add nodes to graph
-	fmt.Println("Loading Griffon config into Dependency Graph")
 	dg.AddNode(&config.Griffon)
 	dg.blockPathToGraphID["griffon"] = config.Griffon.GraphID
 
 	for blockType, blockMap := range config.Data {
 		for blockName, block := range blockMap {
-			fmt.Printf("...Loading Data %s::%s into Dependency Graph\n", blockType, blockName)
+			slog.Info("[Graph] Loading Data into Dependency Graph", slog.Int64("graph_id", block.ID()), slog.String("block_type", string(blockType)), slog.String("block_name", blockName))
 			dg.AddNode(block)
 			dg.blockPathToGraphID[blocks.BuildBlockPath("data", string(blockType), blockName)] = block.ID()
 		}
 	}
 	for blockType, blockMap := range config.Resources {
 		for blockName, block := range blockMap {
-			fmt.Printf("...Loading Resource %s::%s into Dependency Graph\n", blockType, blockName)
+			slog.Info("[Graph] Loading Resource into Dependency Graph", slog.Int64("graph_id", block.ID()), slog.String("block_type", string(blockType)), slog.String("block_name", blockName))
 			dg.AddNode(block)
 			dg.blockPathToGraphID[blocks.BuildBlockPath(string(blockType), blockName)] = block.ID()
 		}
@@ -46,23 +45,19 @@ func (dg *DependencyGraph) LoadGriffonConfig(config *blocks.Config) error {
 	nodes := dg.Nodes()
 	for nodes.Next() {
 		toNode := nodes.Node().(blocks.Block)
-		fmt.Printf("...Processing node [%d] %s.%s\n", toNode.ID(), toNode.BlockType(), toNode.BlockName())
+		slog.Debug("[Graph] Adding edges for node", slog.Int64("graph_id", toNode.ID()), slog.String("block_type", string(toNode.BlockType())), slog.String("block_name", toNode.BlockName()))
 		deps := toNode.Dependencies()
 		for _, dep := range deps {
 			if fromNode := dg.Node(dg.blockPathToGraphID[dep]); fromNode != nil {
-				fmt.Printf("... ...Adding edge from [%d] %s.%s to [%d] %s.%s\n", fromNode.ID(), fromNode.(blocks.Block).BlockType(), fromNode.(blocks.Block).BlockName(), toNode.ID(), toNode.BlockType(), toNode.BlockName())
+				slog.Debug("[Graph] Adding edge/dependency", slog.Int64("from_graph_id", fromNode.ID()), slog.String("from_block_type", string(fromNode.(blocks.Block).BlockType())), slog.String("from_block_name", fromNode.(blocks.Block).BlockName()), slog.Int64("to_graph_id", toNode.ID()), slog.String("to_block_type", string(toNode.BlockType())), slog.String("to_block_name", toNode.BlockName()))
 				dg.SetEdge(dg.NewEdge(fromNode, toNode))
 			}
 		}
 	}
-
-	fmt.Printf("\nBlockPathToGraphID: %+v\n", dg.blockPathToGraphID)
-
 	return nil
 }
 
 func (dg *DependencyGraph) BlockPathToGraphID(id int64) map[string]int64 {
-	fmt.Printf("BlockPathToGraphID: %+v\n", dg.blockPathToGraphID)
 	return dg.blockPathToGraphID
 }
 
