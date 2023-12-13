@@ -2,7 +2,7 @@ package blocks
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 
 	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
@@ -42,7 +42,7 @@ func (r *ResourceBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContex
 			return diags
 		}
 	}
-	fmt.Println(block.Type, r.Name, " depends_on:", r.DependsOn)
+	slog.Debug("ResourceBlock Dependency", slog.String("block_type", string(r.BlockType())), slog.String("block_name", string(r.BlockName())), slog.Any("depends_on", r.DependsOn))
 
 	r.Type = BlockType(block.Type)
 

@@ -42,7 +42,6 @@ func (dg *DependencyGraph) LoadGriffonConfig(config *blocks.Config) error {
 		}
 	}
 
-	fmt.Println()
 	// Add edges to graph
 	nodes := dg.Nodes()
 	for nodes.Next() {
@@ -55,9 +54,7 @@ func (dg *DependencyGraph) LoadGriffonConfig(config *blocks.Config) error {
 				dg.SetEdge(dg.NewEdge(fromNode, toNode))
 			}
 		}
-		fmt.Println()
 	}
-	fmt.Println()
 
 	fmt.Printf("\nBlockPathToGraphID: %+v\n", dg.blockPathToGraphID)
 

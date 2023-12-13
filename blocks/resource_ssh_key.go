@@ -3,7 +3,7 @@ package blocks
 import (
 	"context"
 	"errors"
-	"fmt"
+	"log/slog"
 
 	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
@@ -13,9 +13,9 @@ import (
 )
 
 type SSHKeyBlock struct {
-	SSHKey      string `hcl:"ssh_key" json:"ssh_key" cty:"ssh_key"`
-	DateCreated string `json:"date_created" cty:"date_created"`
-	VID         string `json:"id" cty:"id"`
+	SSHKey      string `hcl:"ssh_key" json:"ssh_key,omitempty" cty:"ssh_key"`
+	DateCreated string `json:"date_created,omitempty" cty:"date_created"`
+	VID         string `json:"id,omitempty" cty:"id"`
 	ResourceBlock
 }
 
@@ -43,11 +43,12 @@ func (s *SSHKeyBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 			return errors.New("unknown attribute " + attrName)
 		}
 	}
+	slog.Debug("SSH Key parameters", slog.String("block_type", string(s.BlockType())), slog.String("block_name", string(s.BlockName())), slog.Any("params", s))
+
 	return nil
 }
 
 func (s *SSHKeyBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
-	fmt.Println("Creating SSH Key", s.Name)
 	sshKey, _, err := vc.SSHKey.Create(context.Background(), &govultr.SSHKeyReq{
 		Name:   s.Name,
 		SSHKey: s.SSHKey,
@@ -58,6 +59,7 @@ func (s *SSHKeyBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *
 
 	s.VID = sshKey.ID
 	s.DateCreated = sshKey.DateCreated
+	slog.Info("SSH Key created", slog.String("block_type", string(s.BlockType())), slog.String("block_name", string(s.BlockName())), slog.Any("ssh_key", sshKey))
 
 	return nil
 }

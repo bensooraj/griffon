@@ -21,12 +21,9 @@ func ExprAsMap(expr hcl.Expression) (map[string][]string, hcl.Diagnostics) {
 				fmt.Printf("step: %+v\n", step)
 				switch t := step.(type) {
 				case hcl.TraverseAttr:
-					// fmt.Println("attr:", t.Name)
 					exprMap[traversal.RootName()] = append(exprMap[traversal.RootName()], t.Name)
 				case hcl.TraverseIndex:
-					// fmt.Println("index:", t.Key)
 				case hcl.TraverseRoot:
-					// fmt.Println("root:", t.Name)
 				default:
 					fmt.Println("unknown traversal type", t)
 				}
@@ -62,7 +59,6 @@ func ExprAsStringSlice(expr hcl.Expression) ([]string, hcl.Diagnostics) {
 			exprSlice = append(exprSlice, BuildBlockPath(paths...))
 		}
 	}
-	// fmt.Println("exprSlice:", exprSlice)
 	return exprSlice, nil
 }
 

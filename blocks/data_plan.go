@@ -3,7 +3,7 @@ package blocks
 import (
 	"context"
 	"errors"
-	"fmt"
+	"log/slog"
 
 	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
@@ -57,17 +57,17 @@ func (p *PlanDataBlock) ProcessConfiguration(evalCtx *hcl.EvalContext) error {
 		}
 	}
 	p.filter = pf
-	fmt.Printf("filter: %+v\n", pf)
+	slog.Debug("Plan filter", slog.String("block_type", string(p.BlockType())), slog.String("block_name", string(p.BlockName())), slog.Any("filter", p.filter))
 	return nil
 }
 
 // Get
 func (p *PlanDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
-	plans, meta, _, err := vc.Plan.List(ctx, p.filter.Type, &govultr.ListOptions{PerPage: 100})
+	plans, _, _, err := vc.Plan.List(ctx, p.filter.Type, &govultr.ListOptions{PerPage: 100})
 	if err != nil {
 		return err
 	}
-	fmt.Println("PlanDataBlock::Get::meta:", meta)
+	slog.Debug("Plan list", slog.Int("count", len(plans)), slog.Any("plans", plans))
 	found := false
 
 	for _, plan := range plans {
@@ -87,9 +87,10 @@ func (p *PlanDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *g
 					p.PlanType = plan.Type
 					p.Locations = plan.Locations
 					found = true
+					slog.Debug("Found plan", slog.String("block_type", string(p.BlockType())), slog.String("block_name", string(p.BlockName())), slog.Any("plan", plan))
 					break
 				} else {
-					fmt.Println("loc:", loc, "p.filter.Region:", p.filter.Region, plan.Locations)
+					// slog.Debug("Plan location doesn't match", slog.String("loc", loc), slog.String("p.filter.Region", p.filter.Region), slog.Any("plan.Locations", plan.Locations))
 				}
 			}
 		}
@@ -98,8 +99,6 @@ func (p *PlanDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *g
 	if !found {
 		return ErrorDataNotFound
 	}
-
-	fmt.Printf("\n....(data.plan.%s) Evaluation context: %s\n", p.Name, evalCtx.Variables["data"].GoString())
 
 	return nil
 }

@@ -3,6 +3,7 @@ package blocks
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/vultr/govultr/v3"
@@ -32,11 +33,11 @@ func (r *RegionDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 
 // GET
 func (r *RegionDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
-	regions, meta, _, err := vc.Region.List(ctx, &govultr.ListOptions{PerPage: 100})
+	regions, _, _, err := vc.Region.List(ctx, &govultr.ListOptions{PerPage: 100})
 	if err != nil {
 		return err
 	}
-	fmt.Println("RegionDataBlock::Get::meta:", meta)
+	slog.Debug("Regions", slog.String("block_type", string(r.BlockType())), slog.String("block_name", string(r.BlockName())), slog.Any("regions", regions))
 	regionID := evalCtx.Variables["region"].AsString()
 
 	for _, region := range regions {
@@ -49,8 +50,6 @@ func (r *RegionDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc 
 			break
 		}
 	}
-
-	fmt.Printf("....(data.region.%s) Evaluation context: %s\n", r.Name, evalCtx.Variables["data"].GoString())
 
 	return nil
 }

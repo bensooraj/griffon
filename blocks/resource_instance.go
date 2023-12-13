@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
@@ -21,18 +22,18 @@ type InstanceBlock struct {
 	Hostname        string   `hcl:"hostname,attr" json:"hostname"`
 	Tags            []string `hcl:"tag,attr" json:"tags"`
 
-	VID             string `json:"id" cty:"id"`
-	Os              string `json:"os" cty:"os"`
-	RAM             int    `json:"ram" cty:"ram"`
-	Disk            int    `json:"disk" cty:"disk"`
-	MainIP          string `json:"main_ip" cty:"main_ip"`
-	VCPUCount       int    `json:"vcpu_count" cty:"vcpu_count"`
+	VID             string `json:"id,omitempty" cty:"id"`
+	Os              string `json:"os,omitempty" cty:"os"`
+	RAM             int    `json:"ram,omitempty" cty:"ram"`
+	Disk            int    `json:"disk,omitempty" cty:"disk"`
+	MainIP          string `json:"main_ip,omitempty" cty:"main_ip"`
+	VCPUCount       int    `json:"vcpu_count,omitempty" cty:"vcpu_count"`
 	DefaultPassword string `json:"default_password,omitempty" cty:"default_password"`
-	DateCreated     string `json:"date_created" cty:"date_created"`
-	Status          string `json:"status" cty:"status"`
-	PowerStatus     string `json:"power_status" cty:"power_status"`
-	ServerStatus    string `json:"server_status" cty:"server_status"`
-	InternalIP      string `json:"internal_ip" cty:"internal_ip"`
+	DateCreated     string `json:"date_created,omitempty" cty:"date_created"`
+	Status          string `json:"status,omitempty" cty:"status"`
+	PowerStatus     string `json:"power_status,omitempty" cty:"power_status"`
+	ServerStatus    string `json:"server_status,omitempty" cty:"server_status"`
+	InternalIP      string `json:"internal_ip,omitempty" cty:"internal_ip"`
 
 	ResourceBlock
 }
@@ -69,18 +70,17 @@ func (i *InstanceBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 		case "hostname":
 			i.Hostname = value.AsString()
 		case "tag":
-			fmt.Println("tags:", value.AsString(), value.AsValueMap())
 			for key, ctyVal := range value.AsValueMap() {
 				i.Tags = append(i.Tags, fmt.Sprintf("%s=%s", key, ctyVal.AsString()))
 			}
 		}
 	}
+	slog.Debug("Instance parameters", slog.String("block_type", string(i.BlockType())), slog.String("block_name", string(i.BlockName())), slog.Any("params", i))
 
 	return nil
 }
 
 func (i *InstanceBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
-	fmt.Println("Creating instance", i.Name)
 	ins, _, err := vc.Instance.Create(ctx, &govultr.InstanceCreateReq{
 		Region:   i.Region,
 		Plan:     i.Plan,
@@ -107,8 +107,7 @@ func (i *InstanceBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc
 	i.ServerStatus = ins.ServerStatus
 	i.InternalIP = ins.InternalIP
 
-	fmt.Println("Created instance", i.Name, i.VID)
-	fmt.Printf("Created instance %+v\n", ins)
+	slog.Info("Instance created", slog.String("block_type", string(i.BlockType())), slog.String("block_name", string(i.BlockName())), slog.Any("instance", ins))
 
 	return nil
 }

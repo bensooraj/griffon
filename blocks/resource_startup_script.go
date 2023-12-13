@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
-	"fmt"
+	"log/slog"
 
 	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
@@ -14,11 +14,11 @@ import (
 )
 
 type StartupScriptBlock struct {
-	Script        string `hcl:"script" json:"script" cty:"script"`
-	VID           string `json:"id" cty:"id"`
-	VDateCreated  string `json:"date_created" cty:"date_created"`
-	VDateModified string `json:"date_modified" cty:"date_modified"`
-	VType         string `json:"type" cty:"type"`
+	Script        string `hcl:"script" json:"script,omitempty" cty:"script"`
+	VID           string `json:"id,omitempty" cty:"id"`
+	VDateCreated  string `json:"date_created,omitempty" cty:"date_created"`
+	VDateModified string `json:"date_modified,omitempty" cty:"date_modified"`
+	VType         string `json:"type,omitempty" cty:"type"`
 	ResourceBlock
 }
 
@@ -41,17 +41,16 @@ func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 
 		switch attrName {
 		case "script":
-			fmt.Println("script:", value.AsString())
 			s.Script = base64.StdEncoding.EncodeToString([]byte(value.AsString()))
 		default:
 			return errors.New("unknown attribute " + attrName)
 		}
 	}
+	slog.Debug("StartupScript parameters", slog.String("block_type", string(s.BlockType())), slog.String("block_name", string(s.BlockName())), slog.Any("params", s))
 	return nil
 }
 
 func (s *StartupScriptBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
-	fmt.Println("Creating startup script", s.Name)
 	ss, _, err := vc.StartupScript.Create(context.Background(), &govultr.StartupScriptReq{
 		Name:   s.Name,
 		Script: s.Script,
@@ -64,7 +63,7 @@ func (s *StartupScriptBlock) Create(ctx context.Context, evalCtx *hcl.EvalContex
 	s.VDateCreated = ss.DateCreated
 	s.VDateModified = ss.DateModified
 	s.VType = ss.Type
-
+	slog.Info("StartupScript created", slog.String("block_type", string(s.BlockType())), slog.String("block_name", string(s.BlockName())), slog.Any("startup_script", ss))
 	return nil
 }
 

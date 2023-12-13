@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/bensooraj/griffon/schema"
 	"github.com/hashicorp/hcl/v2"
@@ -40,7 +41,7 @@ func (d *DataBlock) PreProcessHCLBlock(block *hcl.Block, ctx *hcl.EvalContext) e
 			return diags
 		}
 	}
-	fmt.Println(d.Type, d.Name, " depends_on:", d.DependsOn)
+	slog.Debug("DataBlock Dependency", slog.String("block_type", string(d.BlockType())), slog.String("block_name", string(d.BlockName())), slog.Any("depends_on", d.DependsOn))
 
 	filterBodyContent, _, diags := remain.PartialContent(schema.DataBlockSchema)
 	if diags.HasErrors() {

@@ -42,7 +42,6 @@ func ParseWithBodySchema(filename string, src []byte, evalCtx *hcl.EvalContext) 
 
 	hclBlocks := bodyContent.Blocks.ByType()
 	for blockName, hclBlocks := range hclBlocks {
-		// fmt.Println("blockName:", blockName)
 		switch blockName {
 		case "griffon":
 			if len(hclBlocks) != 1 {
@@ -132,7 +131,6 @@ func ParseWithBodySchema(filename string, src []byte, evalCtx *hcl.EvalContext) 
 			fmt.Println("unknown block type", blockName)
 		}
 	}
-	fmt.Println()
 
 	return &config, nil
 }
@@ -161,13 +159,6 @@ func CalculateEvaluationOrder(config *blocks.Config) (*graph.DependencyGraph, er
 		return nil, err
 	}
 	config.EvaluationOrder = sortedNodeIDs
-	//
-	// fmt.Println("\nEvluation order:")
-	// for i, nID := range sortedNodeIDs {
-	// 	b := dependencyGraph.Node(nID).(blocks.Block)
-	// 	fmt.Println(i, nID, b.BlockType(), b.BlockName())
-	// }
-	fmt.Println()
 
 	return dependencyGraph, nil
 }

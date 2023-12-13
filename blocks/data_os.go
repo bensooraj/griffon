@@ -3,6 +3,7 @@ package blocks
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 
 	"github.com/bensooraj/griffon/schema"
@@ -50,6 +51,7 @@ func (o *OSDataBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 		}
 	}
 	o.filter = osf
+	slog.Debug("OS filter", slog.String("block_type", string(o.BlockType())), slog.String("block_name", string(o.BlockName())), slog.Any("filter", o.filter))
 	return nil
 }
 
@@ -59,6 +61,7 @@ func (o *OSDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *gov
 	if err != nil {
 		return err
 	}
+	slog.Debug("OS list", slog.Int("count", len(oss)), slog.Any("oss", oss))
 
 	found := false
 
@@ -73,6 +76,7 @@ func (o *OSDataBlock) Get(ctx context.Context, evalCtx *hcl.EvalContext, vc *gov
 			o.Family = os.Family
 
 			found = true
+			slog.Info("Found OS", slog.String("name", o.OSName), slog.Int("id", o.VID), slog.String("arch", o.Arch), slog.String("family", o.Family))
 			break
 		}
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 
 	"github.com/bensooraj/griffon/blocks"
@@ -11,6 +12,14 @@ import (
 	"github.com/urfave/cli/v2"
 	"github.com/vultr/govultr/v3"
 )
+
+func init() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelDebug,
+	}))
+	slog.SetDefault(logger)
+}
 
 func main() {
 	app := &cli.App{
@@ -55,15 +64,13 @@ func main() {
 
 // CreateCommand
 func CreateCommand(c *cli.Context) error {
-	log.Println("create")
 	filename := c.String("file")
-
 	// 1. Read the HCL file
 	hclFile, err := os.ReadFile(filename)
 	if err != nil {
 		return cli.Exit(fmt.Sprintf("Error reading file: %v", err), 1)
 	}
-	log.Println(string(hclFile))
+	slog.Debug("Read HCL file", slog.String("filename", filename), slog.String("file", string(hclFile)))
 
 	// 2. Parse the HCL file and load the
 	var (
