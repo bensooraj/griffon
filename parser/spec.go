@@ -1,15 +1,16 @@
-package main
+package parser
 
 import (
 	"fmt"
 
+	"github.com/bensooraj/griffon/blocks"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hcldec"
 	"github.com/hashicorp/hcl/v2/hclparse"
 )
 
-func ParseHCLUsingSpec(filename string, src []byte, ctx *hcl.EvalContext) (*Config, error) {
-	var config Config
+func ParseHCLUsingSpec(filename string, src []byte, ctx *hcl.EvalContext) (*blocks.Config, error) {
+	var config blocks.Config
 	var diags hcl.Diagnostics
 
 	parser := hclparse.NewParser()
@@ -24,20 +25,22 @@ func ParseHCLUsingSpec(filename string, src []byte, ctx *hcl.EvalContext) (*Conf
 		return nil, diags
 	}
 
+	config.Data = make(map[blocks.BlockType]map[string]blocks.Block)
+	config.Resources = make(map[blocks.BlockType]map[string]blocks.Block)
 	for vName, v := range val.AsValueMap() {
 		switch vName {
 		case "griffon":
-			config.Griffon = GriffonBlock{
+			config.Griffon = blocks.GriffonBlock{
 				Region:      v.GetAttr("region").AsString(),
 				VultrAPIKey: v.GetAttr("vultr_api_key").AsString(),
 			}
 		case "ssh_key":
 			sshKeys := v.AsValueSlice()
 			for _, sshKey := range sshKeys {
-				config.SSHKeys = append(config.SSHKeys, SSHKeyBlock{
-					Name:   sshKey.GetAttr("name").AsString(),
-					SSHKey: sshKey.GetAttr("ssh_key").AsString(),
-				})
+				r := &blocks.SSHKeyBlock{SSHKey: sshKey.GetAttr("ssh_key").AsString()}
+				r.Name = sshKey.GetAttr("name").AsString()
+				r.Type = "ssh_key"
+				config.AddResource(r)
 			}
 		default:
 			return nil, fmt.Errorf("unknown block type %q", vName)

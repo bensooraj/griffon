@@ -1,10 +1,11 @@
-package main
+package parser
 
 import (
 	"fmt"
 	"os"
 	"testing"
 
+	"github.com/bensooraj/griffon/blocks"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -28,7 +29,7 @@ func TestSpecParser(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		src      []byte
-		expected Config
+		expected blocks.Config
 	}{
 		{
 			desc: "simple config",
@@ -40,10 +41,18 @@ func TestSpecParser(t *testing.T) {
 			ssh_key "my_key" {
 				ssh_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADA"
 			}`),
-			expected: Config{
-				Griffon: GriffonBlock{Region: "nyc1", VultrAPIKey: "1234567890"},
-				SSHKeys: []SSHKeyBlock{
-					{Name: "my_key", SSHKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADA"},
+			expected: blocks.Config{
+				Griffon: blocks.GriffonBlock{Region: "nyc1", VultrAPIKey: "1234567890"},
+				Resources: map[blocks.BlockType]map[string]blocks.Block{
+					blocks.SSHKeyBlockType: {
+						"my_key": &blocks.SSHKeyBlock{
+							ResourceBlock: blocks.ResourceBlock{
+								Name: "my_key",
+								Type: "ssh_key",
+							},
+							SSHKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADA",
+						},
+					},
 				},
 			},
 		},
@@ -57,16 +66,24 @@ func TestSpecParser(t *testing.T) {
 			ssh_key "my_key" {
 				ssh_key = file("%s")
 			}`, myKeyPubFile.Name())),
-			expected: Config{
-				Griffon: GriffonBlock{Region: "AMS", VultrAPIKey: "axdfcdasdfzzxserdfwsd"},
-				SSHKeys: []SSHKeyBlock{
-					{Name: "my_key", SSHKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADA"},
+			expected: blocks.Config{
+				Griffon: blocks.GriffonBlock{Region: "AMS", VultrAPIKey: "axdfcdasdfzzxserdfwsd"},
+				Resources: map[blocks.BlockType]map[string]blocks.Block{
+					blocks.SSHKeyBlockType: {
+						"my_key": &blocks.SSHKeyBlock{
+							ResourceBlock: blocks.ResourceBlock{
+								Name: "my_key",
+								Type: "ssh_key",
+							},
+							SSHKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADA",
+						},
+					},
 				},
 			},
 		},
 	}
 
-	evalCtx := getEvalContext()
+	evalCtx := GetEvalContext()
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			config, err := ParseHCLUsingSpec("test.hcl", tC.src, evalCtx)
@@ -77,7 +94,12 @@ func TestSpecParser(t *testing.T) {
 			}
 			require.NoError(t, err)
 			require.Equalf(t, tC.expected.Griffon, config.Griffon, "GriffonBlock parsed incorrectly")
-			require.Equalf(t, tC.expected.SSHKeys[0], config.SSHKeys[0], "GriffonBlock parsed incorrectly")
+			require.Equalf(
+				t,
+				tC.expected.Resources[blocks.SSHKeyBlockType]["my_key"].(*blocks.SSHKeyBlock).SSHKey,
+				config.Resources[blocks.SSHKeyBlockType]["my_key"].(*blocks.SSHKeyBlock).SSHKey,
+				"GriffonBlock parsed incorrectly",
+			)
 		})
 	}
 }

@@ -1,9 +1,10 @@
-package main
+package parser
 
 import (
 	"os"
 	"path/filepath"
 
+	"github.com/bensooraj/griffon/blocks"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsimple"
 	"github.com/zclconf/go-cty/cty"
@@ -11,15 +12,15 @@ import (
 	"github.com/zclconf/go-cty/cty/function/stdlib"
 )
 
-func ParseHCL(filename string, src []byte, ctx *hcl.EvalContext) (*Config, error) {
-	config := Config{}
+func ParseHCL(filename string, src []byte, ctx *hcl.EvalContext) (*blocks.Config, error) {
+	config := blocks.Config{}
 	if err := hclsimple.Decode(filename, src, ctx, &config); err != nil {
 		return nil, err
 	}
 	return &config, nil
 }
 
-func getEvalContext() *hcl.EvalContext {
+func GetEvalContext() *hcl.EvalContext {
 	vars := make(map[string]cty.Value)
 
 	// Region variables
@@ -29,6 +30,16 @@ func getEvalContext() *hcl.EvalContext {
 	vars["env"] = cty.ObjectVal(map[string]cty.Value{
 		"VULTR_API_KEY": cty.StringVal(os.Getenv("VULTR_API_KEY")),
 	})
+
+	// Initialize the data block
+	vars["data"] = cty.ObjectVal(map[string]cty.Value{
+		string(blocks.RegionBlockType): cty.ObjectVal(map[string]cty.Value{}),
+		string(blocks.PlanBlockType):   cty.ObjectVal(map[string]cty.Value{}),
+		string(blocks.OSBlockType):     cty.ObjectVal(map[string]cty.Value{}),
+	})
+	vars[string(blocks.SSHKeyBlockType)] = cty.ObjectVal(map[string]cty.Value{})
+	vars[string(blocks.StartupScriptBlockType)] = cty.ObjectVal(map[string]cty.Value{})
+	vars[string(blocks.InstanceBlockType)] = cty.ObjectVal(map[string]cty.Value{})
 
 	functions := make(map[string]function.Function)
 

@@ -1,0 +1,17 @@
+strict digraph "dependency_graph.dot" {
+// Node definitions.
+0 [name=griffon];
+1;
+2;
+3;
+4;
+5;
+6;
+
+// Edge definitions.
+0 -> 1;
+0 -> 2;
+1 -> 2;
+6 -> 1;
+6 -> 2;
+}
