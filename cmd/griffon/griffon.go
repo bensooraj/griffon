@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/bensooraj/griffon/blocks"
+	"github.com/bensooraj/griffon/examples"
 	"github.com/bensooraj/griffon/parser"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/urfave/cli/v2"
@@ -26,6 +27,41 @@ func main() {
 		Name:  "griffon",
 		Usage: "A PoC Vultr cloud automation tool",
 		Commands: []*cli.Command{
+			{
+				Name:    "version",
+				Aliases: []string{"v"},
+				Usage:   "Print the version",
+				Action: func(c *cli.Context) error {
+					fmt.Println("v0.0.1")
+					return nil
+				},
+			},
+			{
+				Name:    "init",
+				Aliases: []string{"i"},
+				Usage:   "Initialize a new project",
+				Action: func(c *cli.Context) error {
+					// Read
+					hclFile, err := examples.ExampleOne.ReadFile("exampleOne.hcl")
+					if err != nil {
+						return cli.Exit(fmt.Sprintf("Error reading file: %v", err), 1)
+					}
+					startupScript, err := examples.ExampleOne.ReadFile("startup_script.my_script.sh")
+					if err != nil {
+						return cli.Exit(fmt.Sprintf("Error reading file: %v", err), 1)
+					}
+					// Write
+					err = os.WriteFile("griffon.hcl", hclFile, 0644)
+					if err != nil {
+						return cli.Exit(fmt.Sprintf("Error writing file: %v", err), 1)
+					}
+					err = os.WriteFile("startup_script.my_script.sh", startupScript, 0644)
+					if err != nil {
+						return cli.Exit(fmt.Sprintf("Error writing file: %v", err), 1)
+					}
+					return nil
+				},
+			},
 			{
 				Name:    "create",
 				Aliases: []string{"c"},

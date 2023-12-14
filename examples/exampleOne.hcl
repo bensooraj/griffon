@@ -31,7 +31,7 @@ ssh_key "my_key" {
 }
 
 startup_script "my_script" {
-    script = "#!/bin/bash\necho 'hello world'"
+    script = file("example/startup_script.my_script.sh")
     depends_on = [ssh_key.my_key, data.region.current]
 }
 

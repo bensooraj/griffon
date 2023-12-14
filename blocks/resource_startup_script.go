@@ -53,6 +53,7 @@ func (s *StartupScriptBlock) ProcessConfiguration(ctx *hcl.EvalContext) error {
 func (s *StartupScriptBlock) Create(ctx context.Context, evalCtx *hcl.EvalContext, vc *govultr.Client) error {
 	ss, _, err := vc.StartupScript.Create(context.Background(), &govultr.StartupScriptReq{
 		Name:   s.Name,
+		Type:   "boot",
 		Script: s.Script,
 	})
 	if err != nil {
