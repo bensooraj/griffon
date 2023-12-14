@@ -53,6 +53,9 @@ func main() {
 					},
 				},
 				Action: CreateCommand,
+				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
+					return nil
+				},
 			},
 		},
 	}
@@ -68,9 +71,10 @@ func CreateCommand(c *cli.Context) error {
 	// 1. Read the HCL file
 	hclFile, err := os.ReadFile(filename)
 	if err != nil {
+		slog.Error("[CMD CREATE] Error reading file", slog.String("filename", filename), slog.String("error", err.Error()))
 		return cli.Exit(fmt.Sprintf("Error reading file: %v", err), 1)
 	}
-	slog.Debug("Read HCL file", slog.String("filename", filename), slog.String("file", string(hclFile)))
+	slog.Debug("[CMD CREATE] Read HCL file", slog.String("filename", filename), slog.String("file", string(hclFile)))
 
 	// 2. Parse the HCL file and load the
 	var (
@@ -81,12 +85,14 @@ func CreateCommand(c *cli.Context) error {
 
 	config, err = parser.ParseWithBodySchema(filename, hclFile, evalCtx)
 	if err != nil {
+		slog.Error("[CMD CREATE] Error parsing file and loading config", slog.String("filename", filename), slog.String("error", err.Error()))
 		return cli.Exit(fmt.Sprintf("Error parsing file and loading config: %v", err), 1)
 	}
 
 	// 3. Evaluate the config
 	err = parser.EvaluateConfig(evalCtx, config, vc)
 	if err != nil {
+		slog.Error("[CMD CREATE] Error evaluating config", slog.String("filename", filename), slog.String("error", err.Error()))
 		return cli.Exit(fmt.Sprintf("Error evaluating config: %v", err), 1)
 	}
 

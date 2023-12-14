@@ -351,11 +351,6 @@ func TestEvaluationContext(t *testing.T) {
 		t.Log("Error adding Instance resource block to eval context:", err)
 	}
 
-	fmt.Println("[AFTER] data:", evalCtx.Variables["data"].GoString())
-	fmt.Println("[AFTER] SSH Key:", evalCtx.Variables[string(blocks.SSHKeyBlockType)].GoString())
-	fmt.Println("[AFTER] Startup Script:", evalCtx.Variables[string(blocks.StartupScriptBlockType)].GoString())
-	fmt.Println("[AFTER] Instance:", evalCtx.Variables[string(blocks.InstanceBlockType)].GoString())
-
 	t.Fail()
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/bensooraj/griffon/blocks"
@@ -128,7 +129,7 @@ func ParseWithBodySchema(filename string, src []byte, evalCtx *hcl.EvalContext) 
 				}
 			}
 		default:
-			fmt.Println("unknown block type", blockName)
+			slog.Debug("[PARSER] unknown block type", slog.String("block_type", blockName))
 		}
 	}
 
@@ -180,7 +181,7 @@ func EvaluateConfig(evalCtx *hcl.EvalContext, config *blocks.Config, vc *govultr
 
 		switch b := node.(type) {
 		case *blocks.GriffonBlock:
-			fmt.Println("GriffonBlock:", b.BlockType(), b.BlockName())
+			slog.Debug("[Evaluate] GriffonBlock", slog.String("block_type", string(b.BlockType())), slog.String("block_name", string(b.BlockName())), slog.Any("griffon", b))
 			if b.VultrAPIKey == "" {
 				return fmt.Errorf("vultr_api_key is required")
 			}
@@ -196,7 +197,6 @@ func EvaluateConfig(evalCtx *hcl.EvalContext, config *blocks.Config, vc *govultr
 		case *blocks.RegionDataBlock,
 			*blocks.OSDataBlock,
 			*blocks.PlanDataBlock:
-			fmt.Println("Data:", b.BlockType(), b.BlockName())
 			err := b.Get(context.Background(), evalCtx, vc)
 			if err != nil {
 				return err
@@ -205,12 +205,10 @@ func EvaluateConfig(evalCtx *hcl.EvalContext, config *blocks.Config, vc *govultr
 			if err != nil {
 				return err
 			}
-			fmt.Println("Evaluation context:", evalCtx.Variables["data"].GoString())
 
 		case *blocks.SSHKeyBlock,
 			*blocks.StartupScriptBlock,
 			*blocks.InstanceBlock:
-			fmt.Println("Resource:", b.BlockType(), b.BlockName())
 			err := b.Create(context.Background(), evalCtx, vc)
 			if err != nil {
 				return err
@@ -219,10 +217,10 @@ func EvaluateConfig(evalCtx *hcl.EvalContext, config *blocks.Config, vc *govultr
 			if err != nil {
 				return err
 			}
-			fmt.Println("Evaluation context:", evalCtx.Variables[string(b.BlockType())].GoString())
 		default:
 			return fmt.Errorf("unknown block type %T", node)
 		}
+		slog.Debug("[Evaluate] Evaluation context", slog.String("block_type", string(node.BlockType())), slog.String("block_name", string(node.BlockName())), slog.String("eval_ctx", evalCtx.Variables[string(node.BlockType())].GoString()))
 	}
 
 	return nil
@@ -240,7 +238,6 @@ func AddBlockToEvalContext(evalCtx *hcl.EvalContext, block blocks.Block) error {
 		blocks.PlanBlockType:
 		dataMap := data.AsValueMap()
 		// Check if the blockTypeVal key exists in dataVars
-		fmt.Println("block.BlockType():", block.BlockType(), "block.BlockName():", block.BlockName())
 		if blockCtyVal := data.GetAttr(string(block.BlockType())); !blockCtyVal.IsNull() {
 			// Get the map of blocks
 			var blockMap map[string]cty.Value
