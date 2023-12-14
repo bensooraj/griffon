@@ -8,7 +8,7 @@ To install `Griffon`, follow these steps:
 2. Open a terminal and run the following command to install `Griffon`:
 
     ```shell
-    go install github.com/bensooraj/griffon
+    go install github.com/bensooraj/griffon/cmd/griffon@v0.0.1
     ```
 
 3. Once the installation is complete, you can verify it by running:
@@ -35,6 +35,7 @@ To use `Griffon`, follow these steps:
 4. Run the following command to create the `Vultr` resources:
 
     ```shell
+    export VULTR_API_KEY=<your vultr API key>
     griffon create -f griffon.yaml
     ```
 
