@@ -26,7 +26,7 @@ data "os" "centos_7" {
 }
 
 ssh_key "my_key" {
-    ssh_key = "ssh-rsa AAAAB3NzaC1yc2E"
+    ssh_key = file("~/.ssh/id_ed25519.pub")
     depends_on = [data.plan.vhf_32gb]
 }
 
