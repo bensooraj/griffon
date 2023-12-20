@@ -8,7 +8,7 @@ To install `Griffon`, follow these steps:
 2. Open a terminal and run the following command to install `Griffon`:
 
     ```shell
-    go install github.com/bensooraj/griffon/cmd/griffon@v0.0.1
+    go install github.com/bensooraj/griffon/cmd/griffon@v0.0.2
     ```
 
 3. Once the installation is complete, you can verify it by running:
