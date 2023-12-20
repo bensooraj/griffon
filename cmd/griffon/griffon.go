@@ -32,7 +32,7 @@ func main() {
 				Aliases: []string{"v"},
 				Usage:   "Print the version",
 				Action: func(c *cli.Context) error {
-					fmt.Println("v0.0.1")
+					fmt.Println("v0.0.2")
 					return nil
 				},
 			},
