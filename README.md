@@ -45,6 +45,10 @@ To use `Griffon`, follow these steps:
 
     This will execute the `Griffon` command and perform the tasks specified in your `griffon.yaml` file.
 
+## Demo
+
+[Watch it on YouTube](https://youtu.be/pMChGOwHOc8?feature=shared)
+
 ## License
 
 `Griffon` is licensed under the [MIT License](LICENSE)
