@@ -30,13 +30,17 @@ To use `Griffon`, follow these steps:
     griffon init
     ```
 
-    This will create two files `griffon.yaml` and `startup_script.my_script.sh` in your project directory.
+    This will create two files `griffon.hcl` and `startup_script.my_script.sh` in your project directory.
 
-4. Run the following command to create the `Vultr` resources:
+4. Create an SSH key pair at `~/.ssh/id_ed25519.pub` by running the following command,
+    ```shell
+    ssh-keygen -t ed25519 -C "<your-email-id>"
+    ```
+5. Run the following command to create the `Vultr` resources:
 
     ```shell
     export VULTR_API_KEY=<your vultr API key>
-    griffon create -f griffon.yaml
+    griffon create -f griffon.hcl
     ```
 
     This will execute the `Griffon` command and perform the tasks specified in your `griffon.yaml` file.

@@ -31,7 +31,7 @@ ssh_key "my_key" {
 }
 
 startup_script "my_script" {
-    script = file("example/startup_script.my_script.sh")
+    script = file("startup_script.my_script.sh")
     depends_on = [ssh_key.my_key, data.region.current]
 }
 
